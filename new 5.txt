@@ -1,0 +1,50 @@
+    {
+
+        {
+            // Check conditions for loanCategory
+            if (Row.SanctionedLimit< 0) //LA is used to discard Staff OD//
+            {
+                Row.loanCategory = 1.ToString();
+
+                if ((Row.SundryAnalysisCode == "MI" || Row.SundryAnalysisCode == "CT" || Row.SundryAnalysisCode == "ME" || Row.SundryAnalysisCode == "SE")
+                    && !new[] { "BH", "MB", "SD" }.Contains(Row.CUSTSUBTYPE))
+                {
+                    Row.loanSubCategory = 1.ToString();
+                }
+                else if ((Row.SundryAnalysisCode == "XX" || Row.SundryAnalysisCode == "N1" || Row.SundryAnalysisCode == "N2" ||
+                        Row.SundryAnalysisCode == "N3" || Row.SundryAnalysisCode == "N4" || Row.SundryAnalysisCode == "N5" ||
+                        Row.SundryAnalysisCode == "N6" || Row.SundryAnalysisCode == "N7")
+
+                && !new[] { "BH", "MB", "SD" }.Contains(Row.CUSTSUBTYPE))
+           {
+                    Row.loanSubCategory = 2.ToString();
+                }
+        else if (new[] { "BH", "MB", "SD" }.Contains(Row.CUSTSUBTYPE))
+                {
+                    Row.loanSubCategory = 3.ToString();
+                }
+                else if (Row.SundryAnalysisCode == "LE" && !new[] { "BH", "MB", "SD" }.Contains(Row.CUSTSUBTYPE))
+                {
+                    Row.loanSubCategory = 3.ToString();
+                }
+                ////Identification Parameter for Agri Finance//
+
+                else if (Row.SundryAnalysisCode == "AF" && !new[] { "BH", "MB", "SD" }.Contains(Row.CUSTSUBTYPE))
+                {
+                    Row.loanSubCategory = 4.ToString();
+                }
+            }
+
+            ///Identification parameter needed for Staff Loan//
+
+           /* else if (Row.SanctionedLimit < 0 && Row.ACT == "LA")
+            {
+                Row.loanCategory = 5.ToString();
+                Row.loanSubCategory = 21.ToString();
+            }*/
+
+
+        }
+    }
+
+}
