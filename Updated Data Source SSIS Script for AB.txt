@@ -1,0 +1,927 @@
+------Visual Studio Package "3. Account Master" destination Table: AccountMaster-------------------------
+Additional Queries:
+1. Where we can get CustomerSubType i.e. BH (Brokerage House), MB (Merchant Bank), Loans to BHs/MBs/SDs  
+2. Data Field for Business Segment (TC = Trading Concern, SC=Service Concern, MC=Manufacturing Concern)
+                       
+
+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++===
+
+SELECT 
+TRIM(a.SCAB||a.SCAN||a.SCAS) AS Unique_AC_ID,
+a.SCAB as ACBranch, 
+a.SCAN  as ACBasicNo, 
+a.SCAS  as ACSuffix, 
+b.NEEAN as ACReference, 
+a.SCSHN as ACShortName,
+a.SCCTP as CustomerType, 
+a.SCACT as ACType, 
+a.SCACD as ACAnalysisCode, --- Customer Segment i.e. Retail, SME, Corporate, SME (C6PF)
+a.SCSAC  as ACSundryAnalysisCode, ---- Customer Segment i.e. LE, ME, SE, CT, CI (C3PF)
+a.SCNANC as ACNumericAnalysisCode, 
+a.SCCCY as ACCurrency,
+a.SCCNAL as ResidentCountry, 
+a.SCCNAR as RiskCountry,  
+a.SCCNAP as ParentCountry, 
+a.SCAI14 as DceasedAC, 
+a.SCAI17  as BlockedAC, 
+a.SCAI20 as InactiveAC, 
+a.SCOAD as ACOpenDate, 
+a.SCDLE as LastTrnDate, 
+a.SCODL as OverdraftAmount, 
+a.SCLED as ODExpiryDate, 
+a.SCC1R as C1UserCode, 
+a.SCC2R as C2UserCode, 
+a.SCC3R as C3UserCode, 
+a.SCC4R as C4UserCode, 
+a.SCC5R as C5UserCode, 
+a.SCAIB6 as AccountOfficer, 
+a.SCSTC as CurrentCLStatus, 
+a.SCAI46  as ContingentAC, 
+a.SCAI47 as InternalAC, 
+a.SCBALL as DayB4YesterdayCB, 
+a.SCBAL  as LastCOBBalance, 
+c.B0A300 as EconomicPurposeCode,
+CASE
+	WHEN  a.SCCTP IN ('HA','HC') THEN (CASE WHEN BGCU13 ='' THEN BGPS08 ELSE BGCU13 END )
+	WHEN a.SCCTP IN ('HB') THEN e.BGPM08
+	WHEN a.SCCTP IN ('KA','KB','KC','KD','KE') THEN e.BGEP08
+	WHEN a.SCCTP IN ('KH','KI','KJ','KL') THEN e.BGNP08
+	WHEN a.SCCTP IN ('KH','KI','KJ','KL') THEN e.BGNP08
+	WHEN a.SCCTP IN ('KG') THEN e.BGPE08
+	WHEN a.SCCTP IN ('KF') THEN e.BGFI08
+	
+END as 	SectorCode,
+
+--c.B0SMEB as BusinessSegment, ----(TC = Trading Concern, SC=Service Concern, MC=Manufacturing Concern) 
+
+d.T4PDAT AS REFDATE
+
+from scpf  as a                                        
+inner join nepf as b on a.scab=b.neab and a.scan=b.nean
+and a.scas=b.neas                                              
+left join b0pf as c on a.scab=c.b0ab and a.scan=c.b0an 
+and a.scas=c.b0as 
+left join t4pf as d on 1=1
+left join bgpf as e on a.scan=e.bgcus                                            
+
+ORDER BY 
+(a.SCAB) ASC , 
+(a.SCAN) ASC , 
+(a.SCAS) ASC
+=================================================================================================================================
+
+--------- SSIS Package Name "2.CustomerBasic" destination Table--- "mis_CustomerBasicInfo"------------------------
+
+
+SELECT  
+
+    GFCPNC AS CustomerID, 
+
+    GFCUN AS CustomerName, 
+
+    GFCUS AS CusMnemonic, 
+
+    GFC1R AS CustomerSegment,
+
+    GFCTP AS CustomerType, 
+
+    GFCUB AS Blocked, 
+
+    GFCUC AS Closed, 
+
+    GFCUD AS Deceased, 
+
+    GFCUZ AS InActive, 
+
+    GFSAC AS CusSundryAnalysisCode, 
+
+    GFACO AS AccountOfficerCode, 
+
+    GFCA2 AS CusAnalysisCode, 
+
+    GFCRF AS CustomerRef, 
+
+    GFCNAP AS ParentCountry, 
+
+    GFCNAR AS RiskCountry, 
+
+    GFCNAL AS ResidenceCountry, 
+
+    GFCOD AS CusOnboardDate, 
+
+    GFDLM AS LastMaintainDate, 
+
+    GFBRNM AS CusDefaultBranch, 
+
+    GFCRB1 AS DefaultTaxRate, 
+
+    D.AAZBDTE AS DateofBirth, 
+
+    D.AAZEAD1 AS EMailAdress, 
+
+	case
+
+	when  B.bgcu04='1001' or B.bgep03='1001' or B.BGNP03='1001' or B.bgpm03='1001' or B.bggend='M' THEN 'Male'
+
+	when  B.bgcu04='1002' or  B.bgep03='1002'  or B.BGNP03='1002' or B.bgpm03='1002' or B.bggend='F' THEN 'Female'
+
+	when  B.bgcu04='1003' or  B.bgep03='1003' or B.BGNP03='1003' or B.bgpm03='1003' THEN ' ThirdGender'
+
+	else '' end Gender,
+
+	A.GFCNAP AS Nationality, 
+
+    B.bgcu02 AS NationalIDNumber, 
+
+    D.AAZTIN AS TIN, 
+
+    B.BGEP02  AS BINNumber, 
+  
+
+	SXPRIM AS AddressType, 
+
+    COALESCE(CAST(SVNA1 AS VARCHAR(100)), '') || 
+
+    COALESCE(CAST(SVNA2 AS VARCHAR(100)), '') || 
+
+    COALESCE(CAST(SVNA3 AS VARCHAR(100)), '') || 
+
+    COALESCE(CAST(SVNA4 AS VARCHAR(100)), '') || 
+
+    COALESCE(CAST(SVNA5 AS VARCHAR(100)), '') AS Address, 
+
+    SVPZIP AS PostalCode
+
+
+
+FROM GFPF AS A
+
+LEFT JOIN BGPF AS B ON A.GFCUS=B.BGCUS
+
+LEFT JOIN SX20LF AS C ON A.GFCUS=C.SXCUS
+
+INNER JOIN AAZPF as d ON D.AAZCUS = A.GFCPNC
+
+==========================================================================================================================
+
+
+-------SSIS Package "Branch Details" ------------- Destination Table "mis_BranchDetails"
+FI_Branch Code reuired against all branch number, FinSoft Table "Static_BB_BranchCode" 
+
+
+SELECT 
+CABRNM  as  BranchMnemonic    			
+,CABBN  as BranchNumber        
+,CABRN  as BranchName                          
+,(CABAD1||CABAD2||CABAD3||CABAD4) as BranchAddress         
+
+
+FROM KFILLIV.BSPF INNER JOIN KFILLIV.CAPF ON KFILLIV.BSPF.BSBRNM =KFILLIV.CAPF.CABRNM
+
+
+==========================================================================
+
+---------------SSIS Package Name: "4.InternalAccount Master.dtsx" --------- Destination: "mis_InternalAccountMaster"
+ SELECT TRIM(SCAB||SCAN||SCAS) AS Unique_AC_ID,
+SCAB as ACBranch, 
+SCAN  as ACBasicNo, 
+SCAS  as ACSuffix,
+SCSHN as ACShortName,
+SCCTP as CustomerType, 
+SCACT as ACType,
+SCACD as ACAnalysisCode, 
+SCSAC  as ACSundryAnalysisCode, 
+SCNANC as ACNumericAnalysisCode,
+SCCCY as ACCurrency,
+SCAI46  as ContingentAC,
+SCAI47 as InternalAC, 
+SCBALL as DayB4YesterdayCB, 
+SCBAL  as LastCOBBalance,
+SCSUMA as ShadowAdjustBal,
+DECIMAL((SCBAL + SCSUMD + SCSUMC)/100,15,2)
+ as StatusBalance
+
+FROM  SCPF
+WHERE  SCAI30<>'N' AND SCAN<'800000' AND SCACT<>'AK' 
+
+----SCAN<'800000' it should be SCAN>'800000'-----
+
+Internal Account Script Component 
+---------------------
+ // Check if ACType is accrual account where shadow postings are made, to determine 
+ ///actual balance status balance to be added.
+ 
+ if (Row.ACTYPE == "YI" || Row.ACTYPE == "YP" || Row.ACTYPE == "Y1" ||
+     Row.ACTYPE == "Y2" || Row.ACTYPE == "YD")
+ {
+     Row.CurrentBalance = Row.LASTCOBBALANCE + Row.STATUSBALANCE;
+ }
+ else if (Row.ACTYPE == "YS" && Row.ACANALYSISCODE == "LJ")
+ {
+     Row.CurrentBalance = Row.LASTCOBBALANCE + Row.STATUSBALANCE;
+ }
+ else
+ {
+     Row.CurrentBalance = Row.LASTCOBBALANCE;
+ }
+---------------------------------------------
+====================================================================================
+
+---------------ssis pACKAGE "5.TermDepositBasic" ---- Destination Table: "mis_TermDepositDtls"
+SELECT   	
+
+ (V5BRNM||V5DLP||V5DLR) as UniqueID
+
+,V5BRNM as BranchMnemonic
+
+,V5DLP as DealType
+
+,V5DLR as DealReference
+
+,(V5ABD||V5AND||V5ASD) as DealACUniqueID
+
+,V5ABD  as DealACBranch
+
+,V5AND  as DealACBasic
+
+,V5ASD  as DealACSuffix
+
+,V5ACT  as DealACType
+
+,V5CCY  as DealCCY
+
+,OTSDTE  as DealOriginalDate
+
+,V5MDT  as DealMaturityDate
+
+,V5IFQ  as DealInttFreqency
+
+,V5LCD  as LastInttFreq
+
+,V5NCD  as NextInttFreq
+
+,cast(V5AM1  as decimal(21,2)) as AccruedInterest
+
+,cast(V5AM2 as decimal(21,2)) as CurrentCycleInterest
+
+,cast(V5AM4 as decimal(21,2))  as TotalInttPosted
+
+,cast(V5IM1 as decimal(21,2))  as ForcastedInttCurrentMonth
+
+,cast(V5IM2 as decimal(21,2))  as CurrentMonthToDateIntt
+
+,cast(V5AIM as decimal(21,2)) as InttAdjustmentAmount
+
+,cast(V5IMS as decimal(21,2))  as TotalCalculatedInttFmStarttoTodate
+
+,V5BRR  as BaseRateCode
+
+,cast(V5DRR as decimal(21,2))  as BaseRate
+
+,cast(V5RTM as decimal(21,2)) as InterestMargin
+
+,cast(V5SPR as decimal(21,2))  as SpreadRate
+
+,cast (V5RAT as decimal(21,2))  as ActualCurrentRate
+
+,cast(V5APRR as decimal(21,2))  as EffectiveRateofIntt
+
+,cast(V5BAL as decimal(21,2))  as CurrentOutBalance
+
+,cast(OTDLA2 as decimal(21,2)) as OriginalDealAmount
+
+,V5PRC as PeriodCode
+
+
+
+FROM     V5PF left join OTPF on v5brnm=otbrnm and v5dlp=otdlp and v5dlr=otdlr WHERE V5TDT='D' AND V5ARC=' '
+
+
+
+=====================================================================
+
+-----------SSIS Package Name "6.TermLoan Basic" --- Destination Table "TermLoans"
+
+
+
+//the main reference in OSPF ---if needed later
+SELECT (A.V5BRNM||A.V5DLP||A.V5DLR) as UniqueID, A.V5BRNM as DealBranch, A.V5DLP as DealType, A.V5DLR as DealRefNo, 
+
+(A.V5ABD||A.V5AND||A.V5ASD) as ACUniqueID, A.V5ABD as DealACBranch, A.V5AND as DealCustomerID, A.V5ASD as DealACSuffix, 
+
+A.V5ACT as DealACType, A.V5CCY as DealCCY, C.OTSDTE as DealStartDate, A.V5MDT as DealMaturityDate, 
+
+A.V5IFQ as InterestFrequency, A.V5LCD as LastInttCycleDate, A.V5NCD as NextInttCycleDate, A.V5AM1 as AccruedInterest, 
+
+A.V5AM2  as CurrentCycleInterest, A.V5AM4 as TotalInttPosted, A.V5IM1 as ForcastedInttCurrentMonth, A.V5IM2  as CurrentMonthToDateIntt, 
+
+A.V5AIM as InttAdjustmentAmount, A.V5IMS  as TotalCalculatedInttFmStarttoTodate, A.V5BRR as BaseRateCode, A.V5DRR as DifferentialCode, 
+
+A.V5RAT as CurrentActualRate, A.V5RTM as CurrentMargin, A.V5SPR as SpreadRate,
+
+A.V5APR as AnnualCalcRate, A.V5APRR  as CurrentEffectiveRate, A.V5SBAL as CurrentScheduleBalance, 
+
+A.V5BAL as CurrentOutBalance,
+B.BUDL01 as EconomicPurposeCode,
+
+
+T4PF.T4PDAT AS REFERENCEDATE
+
+FROM   V5PF AS A --interest sttus ----loan ospf
+	   LEFT JOIN BUPF AS B ON A.V5BRNM=B.BUBRNM AND A.V5DLP=B.BUDLP AND A.V5DLR=B.BUDLR
+
+       LEFT JOIN T4PF ON 1=1
+
+LEFT JOIN OTPF AS C ON  A.V5BRNM=C.OTBRNM AND A.V5DLP=C.OTDLP AND A.V5DLR=C.OTDLR
+
+
+
+WHERE V5ARC='' AND V5TDT='L' 
+	   
+	   
+===============================================================++++++++++++++++++++===
+SSIS Package -------------7.Overdue Installment and CLSts--------------Destination: mis_TermLoanOverdue----------------
+
+	
+	WITH T1_CTE AS (
+    SELECT 
+        LSBRNM || LSDLP || LSDLR AS UNIQID,
+        SUM(LSAMTD) AS SCHEDULE_AMT,
+        SUM(LSAMTP) AS PAID_AMT,
+        SUM(LSAMTD) - SUM(LSAMTP) AS OUTSTANDING_AMT
+    FROM KFILLIV.LSPF
+    WHERE LSMVT = 'P'
+    GROUP BY LSBRNM, LSDLP, LSDLR
+),
+
+T2_CTE AS (
+    SELECT 
+        LSBRNM || LSDLP || LSDLR AS UNIQID,
+        LSAMTD AS REPAYMENT_AMT
+    FROM KFILLIV.LSPF A
+    WHERE LSMVT = 'P'
+      AND LSDTE = (
+            SELECT MAX(LSDTE)
+            FROM KFILLIV.LSPF B
+            WHERE LSMVT = 'P' 
+              AND A.LSBRNM = B.LSBRNM 
+              AND A.LSDLP = B.LSDLP 
+              AND A.LSDLR = B.LSDLR
+        )
+),
+
+T3_CTE AS (
+    SELECT  
+        LSBRNM || LSDLP || LSDLR AS UNIQID,
+        MIN(LSDTE) AS EarliestDate,   
+        T4PDAT as SystemDate 
+ FROM KFILLIV.LSPF AS A                                  
+    LEFT JOIN KFILLIV.T4PF AS B ON 1=1                   
+    WHERE (LSAMTP <> LSAMTD OR LSUP <> 0)                
+      AND LSLSC NOT IN ('','00', 'AC', 'SP', 'EA', 'WL')             
+    GROUP BY LSBRNM, LSDLP, LSDLR, T4PDAT  		
+    ),
+
+H1_CTE AS (
+    ELECT 
+        H1BRNM || H1LNP || H1DLR AS DEALUNQID,
+        MAX(CASE WHEN H1LSC IN ('AC', 'BQ', 'DQ', 'EA', 'SM', 'SP','SQ','WL') THEN H1LSC ELSE ' ' END) AS CLQlJ,
+        MAX(CASE WHEN H1LSC IN ('00', '01', '30', '60', '90', 'XX', 'SS', 'DF' , 'BL') THEN H1LSC ELSE ' ' END) AS CLOBJ,
+        MAX(CASE WHEN H1MAN = 'Y' THEN H1MAN ELSE ' ' END) AS MANUAL
+    FROM KFILLIV.H1PF
+    GROUP BY H1BRNM, H1LNP, H1DLR
+),
+
+OM_CTE AS (
+    SELECT 
+        OMBRNM || OMDLP || OMDLR AS DEALUNQUEID,
+        SUM(OMNWP) AS DISBURSEDAMOUNT
+    FROM KFILLIV.OMPF AS A 
+    INNER JOIN KFILLIV.V5PF AS B 
+        ON A.OMBRNM = B.V5BRNM 
+        AND A.OMDLP = B.V5DLP 
+        AND A.OMDLR = B.V5DLR
+    WHERE 
+        A.OMMVT = 'P' 
+        AND A.OMMVTS IN ('C', 'O') 
+        AND A.OMPRF = 'P' 
+        AND B.V5ARC = '' 
+        AND B.V5TDT = 'L'
+    GROUP BY A.OMBRNM, A.OMDLP, A.OMDLR
+)
+
+SELECT 
+    T1.UNIQID,
+    COALESCE(T1.SCHEDULE_AMT, 0.00) AS SCHEDULE_AMT,
+    COALESCE(T1.PAID_AMT, 0.00) AS PAID_AMT,
+    T1.OUTSTANDING_AMT,
+    COALESCE(T2.REPAYMENT_AMT, 0.00) AS REPAYMENT_AMT,
+    COALESCE(T3.EarliestDate, 0) AS EarliestOvdDate, -- Added earliest installment date
+    COALESCE(T3.SystemDate,0) as SystemDate,	
+	H1.CLOBJ,
+    H1.CLQlJ,
+    H1.MANUAL,
+    COALESCE(OM.DISBURSEDAMOUNT, 0.00) AS DISBURSEDAMOUNT
+FROM T1_CTE AS T1
+LEFT JOIN T2_CTE AS T2 ON T1.UNIQID = T2.UNIQID
+LEFT JOIN T3_CTE AS T3 ON T1.UNIQID = T3.UNIQID 
+LEFT JOIN H1_CTE AS H1 ON T1.UNIQID = H1.DEALUNQID
+LEFT JOIN OM_CTE AS OM ON T1.UNIQID = OM.DEALUNQUEID
+
+            
+----------------------------------------------------
+Script Component:
+    
+        // Calculate InstallmentAmountDue
+        if (!Row.SCHEDULEAMT_IsNull)
+        {
+            Row.InstallmentAmountDue = Math.Round((decimal)Row.SCHEDULEAMT, 2);
+        }
+        else
+        {
+            Row.InstallmentAmountDue = 0;
+        }
+
+        // Calculate InstallmentAmountPaid
+        if (!Row.PAIDAMT_IsNull)
+        {
+            Row.InstallmentAmountPaid = Math.Round((decimal)Row.PAIDAMT, 2);
+        }
+        else
+        {
+            Row.InstallmentAmountPaid = 0;
+        }
+
+        // Calculate InstallmentSize
+        if (!Row.REPAYMENTAMT_IsNull)
+        {
+            Row.InstallmentSize = Math.Round((decimal)Row.REPAYMENTAMT, 2);
+        }
+        else
+        {
+            Row.InstallmentSize = 0;
+        }
+
+        // Calculate InstallmentAmountOutstanding
+        decimal scheduleAmt = Row.SCHEDULEAMT_IsNull ? 0 : (decimal)Row.SCHEDULEAMT;
+        decimal paidAmt = Row.PAIDAMT_IsNull ? 0 : (decimal)Row.PAIDAMT;
+        Row.InstallmentAmountOutstanding = Math.Round(scheduleAmt - paidAmt, 2);
+
+        // Calculate NosOfOVDInstallment
+        decimal repaymentAmt = Row.REPAYMENTAMT_IsNull ? 0 : (decimal)Row.REPAYMENTAMT;
+        if (repaymentAmt == 0)
+        {
+            // If repaymentAmt is zero, set NosOfOVDInstallment to zero to avoid division by zero
+            Row.NosOfOVDInstallment = 0;
+        }
+        else
+        {
+            Row.NosOfOVDInstallment = (int)Math.Floor((scheduleAmt - paidAmt) / repaymentAmt);
+        }
+        string EarliestDateStr = Row.EARLIESTOVDDATE.ToString();
+        string SystemDateStr = Row.SYSTEMDATE.ToString();
+
+        if (EarliestDateStr != "0")
+        {
+            //for expiry date
+            int century1 = int.Parse(EarliestDateStr.Substring(0, 1));
+            int year1 = int.Parse(EarliestDateStr.Substring(1, 2));
+            int month1 = int.Parse(EarliestDateStr.Substring(3, 2));
+            int day1 = int.Parse(EarliestDateStr.Substring(5, 2));
+
+
+
+
+            //for refenence date
+            int century2 = int.Parse(SystemDateStr.Substring(0, 1));
+            int year2 = int.Parse(SystemDateStr.Substring(1, 2));
+            int month2 = int.Parse(SystemDateStr.Substring(3, 2));
+            int day2 = int.Parse(SystemDateStr.Substring(5, 2));
+
+            // Adjust the century part (assuming 2000 for 1 and 1900 for 0)
+            // Convert both dates into total days
+            int totalDays1 = (century1 * 100 * 360) + (year1 * 360) + (month1 * 30) + day1;
+            int totalDays2 = (century2 * 100 * 360) + (year2 * 360) + (month2 * 30) + day2;
+
+            if (totalDays2 > totalDays1)
+            {
+                Row.OverDueDays = Math.Abs(totalDays2 - totalDays1);
+            }
+
+        }
+    }
+==============================================================================================================================
+
+SSIS Package : "8.Collateral" destination Table "CollateralBasicDetails"
+							
+
+
+select 
+
+(HXAB||HXAN||HXAS) as LOANUNIQID,
+
+(HXCDBN||HXCDLP||HXCDLR) as COLITEMREF,
+
+A.HXAAMT as ASSINEDAMOUNT,            
+
+B.HYCCY  as COLCCY,          
+
+B.HYCLV  as COLVALUE,             
+
+B.HYBKV  as COLBANKVALUE,                   
+
+C.HWCLP  as COLTYPE,                  
+
+C.HWCPD  as COLDESCRIPTION      
+
+
+
+from HXPF as A 
+
+inner join HYPF as B on (A.HXCDLP=B.HYDLP and A.HXCDLR=B.HYDLR and A.HXCDBN=B.HYDBNM)
+
+inner join HWPF as C on B.HYCLP=C.HWCLP
+
+where A.HXAB<>' ' and A.HXCDLP<>' '
+
+
+
+union all
+
+
+
+select 
+
+(HXAB||HXAN||HXAS) as ColUniqID,
+
+HXCLR as COLITEMREF,
+
+A.HXAAMT as ASSINEDAMOUNT,            
+
+B.HYCCY  as COLCCY,          
+
+B.HYCLV  as COLVALUE,             
+
+B.HYBKV  as COLBANKVALUE,                   
+
+C.HWCLP  as COLTYPE,                  
+
+C.HWCPD  as COLDESCRIPTION 
+
+
+
+from HXPF as A 
+
+inner join HYPF as B on A.HXCLR=B.HYCLR 
+
+inner join HWPF as C on B.HYCLP=C.HWCLP
+
+where A.HXCLR<>' ' and (HXAB||HXAN||HXAS)<>' '
+
+
+
+union all
+
+          
+
+SELECT (HXDBNM||HXDLP||HXDLR) as LOANUNIQID,    
+
+HXCLR as COLITEMREF,                       
+
+A.HXAAMT as ASSINEDAMOUNT,            
+
+B.HYCCY  as COLCCY,          
+
+B.HYCLV  as COLVALUE,             
+
+B.HYBKV  as COLBANKVALUE,                   
+
+C.HWCLP  as COLTYPE,                  
+
+C.HWCPD  as COLDESCRIPTION  
+
+
+
+from HXPF as A 
+
+inner join HYPF as B on A.HXCLR=B.HYCLR 
+
+inner join HWPF as C on B.HYCLP=C.HWCLP
+
+where A.HXCLR<>' ' and (HXDBNM||HXDLP||HXDLR)<>' '
+
+
+
+UNION ALL
+
+                       
+
+SELECT (HXDBNM||HXDLP||HXDLR) AS LOANUNIQID,       
+
+(HXCDBN||HXCDLP||HXCDLR) AS COLITEMREF,      
+
+A.HXAAMT as ASSINEDAMOUNT,            
+
+B.HYCCY  as COLCCY,          
+
+B.HYCLV  as COLVALUE,             
+
+B.HYBKV  as COLBANKVALUE,                   
+
+C.HWCLP  as COLTYPE,                  
+
+C.HWCPD  as COLDESCRIPTION 
+
+
+
+from HXPF as A 
+
+inner join HYPF as B on (A.HXCDLP=B.HYDLP and A.HXCDLR=B.HYDLR and A.HXCDBN=B.HYDBNM)
+
+inner join HWPF as C on B.HYCLP=C.HWCLP
+
+where A.HXDLP<>' ' and (HXCDBN||HXCDLP||HXCDLR)<>' '
+
+
+================================================================================================
+// some account exists where there could be interest rate varies as per amount ()
+SSIS  Package  "9.InterestRate" --- Destination table: AccountInterestRate
+
+WITH CalculatedBaseCode AS (
+    SELECT 
+        (a.S5AB || a.S5AN || a.S5AS) AS UniqueAcID,
+        a.S5CCY AS ACCurrency, 
+        a.S5ACT AS ACType,
+        CAST(a.S5BAL AS DECIMAL(18,2)) AS CurrentBalance,
+        COALESCE(CAST(a.S5AIMD AS DECIMAL(18,2)), 0.00) AS AdjustedDRInterest, 
+        COALESCE(CAST(a.S5AM1D AS DECIMAL(18,2)), 0.00) AS DRInterestAccrued, 
+        COALESCE(CAST(a.S5AM2D AS DECIMAL(18,2)), 0.00) AS NextCycleProDRInterest, 
+        COALESCE(CAST(a.S5AM4D AS DECIMAL(18,2)), 0.00) AS TotalDRInterestPosted,
+        a.S5BRRD AS DEBITBASECODE,
+        a.S5DRRD AS DEBITDIFFCODE,
+        COALESCE(CAST(b.D4BRAR AS DECIMAL(8,2)), 0.00) AS BaseRate, 
+        COALESCE(CAST(c.D5DRAR AS DECIMAL(8,2)), 0.00) AS DifferentialRate, 
+        a.S5TRCD AS DRTierRateCode, 
+        COALESCE(CAST(a.S5RTMD AS DECIMAL(18,2)), 0.00) AS DRInterestMargin, 
+        COALESCE(CAST((b.D4BRAR + c.D5DRAR + a.S5RTMD) AS DECIMAL(8,2)), 0.00) AS DRInterestRate,
+        COALESCE(CAST(a.S5AIMC AS DECIMAL(18,2)), 0.00) AS AdjustedCRInterest, 
+        COALESCE(CAST(a.S5AM1C AS DECIMAL(18,2)), 0.00) AS CRInterestAccrued, 
+        COALESCE(CAST(a.S5AM2C AS DECIMAL(18,2)), 0.00) AS NextCycleProCRInterest, 
+        COALESCE(CAST(a.S5AM4C AS DECIMAL(18,2)), 0.00) AS TotalCRInterestPosted, 
+        a.S5BRRC AS CREDITBASECODE,
+        a.S5DRRC AS CREDITDIFFCODE,
+        COALESCE(CAST(f.D4BRAR AS DECIMAL(8,2)), 0.00) AS CRBaseRate,
+        COALESCE(CAST(g.D5DRAR AS DECIMAL(8,2)), 0.00) AS CRDifferentialRate, 
+        a.S5TRCC AS CRTierRateCode, 
+        COALESCE(CAST(a.S5RTMC AS DECIMAL(18,2)), 0.00) AS CRInterestMargin, 
+        COALESCE(CAST((f.D4BRAR + g.D5DRAR + a.S5RTMC) AS DECIMAL(8,2)), 0.00) AS CRInterestRate,
+
+        -- Calculate CrTBaseCode and CrTDiffCode
+        CASE 
+            WHEN a.S5TRCC IS NOT NULL AND a.S5TRCC <> '' THEN 
+                CASE 
+                    WHEN a.S5BAL < h.D9TLV0 THEN h.D9TBR0
+                    WHEN a.S5BAL BETWEEN h.D9TLV0 AND h.D9TLV1 THEN h.D9TBR1
+                    WHEN a.S5BAL BETWEEN h.D9TLV1 AND h.D9TLV2 THEN h.D9TBR2
+                    WHEN a.S5BAL BETWEEN h.D9TLV2 AND h.D9TLV3 THEN h.D9TBR3
+                    WHEN a.S5BAL BETWEEN h.D9TLV3 AND h.D9TLV4 THEN h.D9TBR4
+                    ELSE h.D9TBR5
+                END
+            ELSE '' 
+        END AS CrTBaseCode,
+
+        CASE 
+            WHEN a.S5TRCC IS NOT NULL AND a.S5TRCC <> '' THEN 
+                CASE 
+                    WHEN a.S5BAL < h.D9TLV0 THEN h.D9TDR0
+                    WHEN a.S5BAL BETWEEN h.D9TLV0 AND h.D9TLV1 THEN h.D9TDR1
+                    WHEN a.S5BAL BETWEEN h.D9TLV1 AND h.D9TLV2 THEN h.D9TDR2
+                    WHEN a.S5BAL BETWEEN h.D9TLV2 AND h.D9TLV3 THEN h.D9TDR3
+                    WHEN a.S5BAL BETWEEN h.D9TLV3 AND h.D9TLV4 THEN h.D9TDR4
+                    ELSE h.D9TDR5
+                END
+            ELSE '' 
+        END AS CrTDiffCode
+
+    FROM 
+        S5PF AS a
+        LEFT JOIN D4PF AS b ON a.S5BRRD = b.D4BRR AND b.D4DTE = 9999999
+        LEFT JOIN D5PF AS c ON a.S5DRRD = c.D5DRR AND c.D5DTE = 9999999
+        LEFT JOIN D4PF AS f ON a.S5BRRC = f.D4BRR AND f.D4DTE = 9999999
+        LEFT JOIN D5PF AS g ON a.S5DRRC = g.D5DRR AND g.D5DTE = 9999999
+        LEFT JOIN D9PF AS h ON a.S5TRCC = h.D9TRC AND h.D9DTE = 9999999
+    WHERE 
+        a.S5ACT <> 'BS'
+        AND a.S5AS <> '050' 
+ )
+
+SELECT 
+    cb.*,
+    COALESCE(CAST(k.D4BRAR AS DECIMAL(8,2)), 0.00) AS CrTBaseCodeRate,
+    COALESCE(CAST(l.D5DRAR AS DECIMAL(8,2)), 0.00) AS CrTDiffCodeRate,
+    
+    -- Calculate final CRInterestRate with the newly joined CrTBaseCodeRate and CrTDiffCodeRate
+    COALESCE(CAST((cb.CRBaseRate + cb.CRDifferentialRate + cb.CRInterestMargin + 
+                  COALESCE(k.D4BRAR, 0) + COALESCE(l.D5DRAR, 0)) AS DECIMAL(8,2)), 0.00) AS FinalCRInterestRate
+
+FROM 
+    CalculatedBaseCode AS cb
+    LEFT JOIN D4PF AS k ON cb.CrTBaseCode = k.D4BRR AND k.D4DTE = 9999999
+    LEFT JOIN D5PF AS l ON cb.CrTDiffCode = l.D5DRR AND l.D5DTE = 9999999
+==========================================================================================================
+
+
+TI Plus SSIS Package destination Table mis_TiPLus
+
+
+SELECT 
+  TRIM(
+    CASE WHEN "MASTER"."BHALF_BRN" IS NOT NULL THEN "MASTER"."BHALF_BRN" ELSE "MASTER"."INPUT_BRN" END
+  ) AS BrMnemonic, 
+  --CASE WHEN PRODTYPE.CODE IN ('LIM', 'PS6') THEN 'LIM' WHEN PRODTYPE.CODE IN ('LTR', 'PS7', 'LTC') THEN 'LTR' 
+       --WHEN PRODTYPE.CODE IN ('PAF', 'PS2') THEN 'PAF' WHEN PRODTYPE.CODE IN ('PAI', 'PS8', 'PFI') THEN 'PAI' 
+	  -- WHEN PRODTYPE.CODE IN ('PAC', 'PS1', 'PCS') THEN 'PAC' WHEN PRODTYPE.CODE IN ('PAE', 'PS4', 'PS9', 'EDF', 'PCE') THEN 'PAE' 
+	  -- WHEN PRODTYPE.CODE IN ('PAO', 'PS3') THEN 'PAO' WHEN PRODTYPE.CODE IN ('DLN', 'DL') THEN 'DLN' 
+	  -- WHEN PRODTYPE.CODE IN ('ECC', 'ES1') THEN 'ECC' WHEN PRODTYPE.CODE IN ('FDP', 'ES3') THEN 'FDP' 
+	  -- WHEN PRODTYPE.CODE IN ('FDU', 'ES4') THEN 'FDU' WHEN PRODTYPE.CODE IN ('IDP', 'ES2') THEN 'IDP' 
+	  -- WHEN PRODTYPE.CODE IN ('ODG', 'ODS') THEN 'ODG' ELSE PRODTYPE.CODE END AS DealType, 
+	  
+	  PRODTYPE.CODE as ProductType,
+	  
+  CASE WHEN LENGTH(MASTER.MASTER_REF) < 13 THEN REPEAT(
+    '0', 
+    13 - LENGTH(MASTER.MASTER_REF)
+  ) || MASTER.MASTER_REF ELSE RIGHT(MASTER.MASTER_REF, 13) END AS DealReference, 
+  --CASE WHEN GFPF.GFCA2 = 'AA' THEN 'OTR' WHEN GFPF.GFCA2 IN ('AB', 'AD') THEN 'SME' END AS FinType, 
+  GFPF.GFCA2 as AnalysisCode,
+  TRIM("GFPF"."GFCUN") AS BorrowerName, 
+  'CL3' AS CLType,
+  MASTER.CCY AS CURRENCY, 
+  CAST(
+    FNCEMASTER.DEAL_AMT / POWER(
+      10, 
+      CAST(C8PF.C8CED AS INTEGER)
+    ) AS DECIMAL(18, 2)
+  ) AS DealStarAmount, 
+  '1' || VARCHAR_FORMAT(FNCEMASTER.STARTDATE, 'YYMMDD') AS DealStartDate, 
+  COALESCE(
+    CAST(
+      (
+        (
+          CURRENTINT.RECAMT + CURRENTINT.RECAMT_PD
+        )
+      )/ POWER(
+        10, 
+        CAST(C8PF.C8CED AS INTEGER)
+      ) AS DECIMAL(18, 2)
+    ), 
+    0.00
+  ) AS TTLACCRUED_INTEREST, 
+  COALESCE(
+    CAST(
+      (
+        (
+          CURRENTINT.RECAMT + CURRENTINT.RECAMT_PD - FNCEMASTER.INTP_AMT
+        )
+      )/ POWER(
+        10, 
+        CAST(C8PF.C8CED AS INTEGER)
+      ) AS DECIMAL(18, 2)
+    ), 
+    0.00
+  ) AS AccruedInterest, 
+  COALESCE(
+    CAST(
+      (FNCEMASTER.INTP_AMT)/ POWER(
+        10, 
+        CAST(C8PF.C8CED AS INTEGER)
+      ) AS DECIMAL(18, 2)
+    ), 
+    0.00
+  ) AS INTEREST_PAID, 
+  COALESCE(
+    CAST(
+      (MASTER.TOTLIABAMT)/ POWER(
+        10, 
+        CAST(C8PF.C8CED AS INTEGER)
+      ) AS DECIMAL(18, 2)
+    ), 
+    0.00
+  ) AS PRIN_OUTSTANDING, 
+  (
+    COALESCE(
+      CAST(
+        (MASTER.TOTLIABAMT)/ POWER(
+          10, 
+          CAST(C8PF.C8CED AS INTEGER)
+        ) AS DECIMAL(18, 2)
+      ), 
+      0.00
+    ) + COALESCE(
+      CAST(
+        (
+          (
+            CURRENTINT.RECAMT + CURRENTINT.RECAMT_PD
+          )
+        )/ POWER(
+          10, 
+          CAST(C8PF.C8CED AS INTEGER)
+        ) AS DECIMAL(18, 2)
+      ), 
+      0.00
+    ) - COALESCE(
+      CAST(
+        (FNCEMASTER.INTP_AMT)/ POWER(
+          10, 
+          CAST(C8PF.C8CED AS INTEGER)
+        ) AS DECIMAL(18, 2)
+      ), 
+      0.00
+    )
+  ) AS OutstandingAmount, 
+  '1' || VARCHAR_FORMAT(FNCEMASTER.MATURITY, 'YYMMDD') AS MaturityDate, 
+  ---CASE WHEN GFPF.GFCA2 = 'AA' THEN 'LE' WHEN GFPF.GFCA2 = 'AB' THEN 'SE' WHEN GFPF.GFCA2 = 'AD' THEN 'ME' ELSE 'MI' END AS CATEGORY, 
+  COALESCE(
+    CAST(
+      (ExtMaster.SUSAMNT)/ POWER(
+        10, 
+        CAST(C8PF.C8CED AS INTEGER)
+      ) AS DECIMAL(18, 2)
+    ), 
+    0.00
+  ) AS INT_SUSPENSE, 
+  ---CASE WHEN ExtMaster.CLSTATUS = ' ' THEN 'ST' ELSE ExtMaster.CLSTATUS END AS CL_sts, 
+  "GFPF"."GFCPNC" AS Cust_Number, 
+  TRIM("MASTER"."MASTER_REF") AS UniqueID, 
+  Trim('1' || VARCHAR_FORMAT(CURRENT DATE, 'YYMMDD')) AS Refdate, 
+  --TRIM(REPLACE(POSTING.BO_ACC_NO, '-', '')) AS BO_ACC_NO, 
+  --TRIM(POSTING.ACC_TYPE) as ACType, 
+  TRIM(MASTER.RELMSTRREF) AS RELMSTRREF, 
+  TRIM(LCMASTER.GOODSCODE) AS GOODSCODE,
+  BENPTY.COUNTRY AS SELLER_COUNTRY,
+  RCVDPTY.COUNTRY AS BUYER_COUNTRY,
+  ROW_NUMBER() OVER (PARTITION BY MASTER.MASTER_REF ORDER BY MASTER.KEY97) AS RowNum
+FROM 
+  (
+    (
+      (
+        (
+          (
+            (
+              (
+                "DBZONE1"."FNCEMASTER" "FNCEMASTER" 
+                INNER JOIN "DBZONE1"."MASTER" "MASTER" ON "FNCEMASTER"."KEY97" = "MASTER"."KEY97"
+              ) 
+              INNER JOIN "DBZONE1"."PARTYDTLS" "PARTYDTLS" ON "FNCEMASTER"."DEBITPARTY" = "PARTYDTLS"."KEY97"
+            ) 
+            INNER JOIN "DBZONE1"."CURRENTINT" "CURRENTINT" ON "FNCEMASTER"."INT_KEY" = "CURRENTINT"."KEY97"
+          ) 
+          INNER JOIN "DBZONE1"."GFPF" "GFPF" ON "PARTYDTLS"."CUS_MNM" = "GFPF"."GFCUS1"
+        ) 
+        INNER JOIN "DBZONE1"."PRODTYPE" "PRODTYPE" ON "MASTER"."PRODTYPE" = "PRODTYPE"."KEY97"
+      ) 
+      INNER JOIN "DBZONE1"."EXTMASTER" "EXTMASTER" ON "MASTER"."EXTFIELD" = "EXTMASTER"."KEY29"
+    ) 
+    INNER JOIN "DBZONE1"."C8PF" "C8PF" ON "MASTER"."CCY" = "C8PF"."C8CCY"
+  ) 
+  INNER JOIN "DBZONE1"."SPOTRATE" "SPOTRATE" ON "C8PF"."C8CCY" = "SPOTRATE"."CURRENCY" 
+  --LEFT JOIN DBZONE1.BASEEVENT AS BASEEVENT ON MASTER.KEY97 = BASEEVENT.MASTER_KEY 
+  --LEFT JOIN DBZONE1.RELITEM AS RELITEM ON BASEEVENT.KEY97 = RELITEM.EVENT_KEY 
+  --LEFT JOIN DBZONE1.POSTING AS POSTING ON RELITEM.KEY97 = POSTING.KEY97 
+  LEFT JOIN DBZONE1.LCMASTER AS LCMASTER ON MASTER.RELMSTRKEY = LCMASTER.KEY97 
+  LEFT JOIN DBZONE1.PARTYDTLS AS BENPTY ON LCMASTER.BEN_PTY=BENPTY.KEY97
+  LEFT JOIN DBZONE1.PARTYDTLS AS RCVDPTY ON LCMASTER.RCVD_PTY=RCVDPTY.KEY97
+ 
+
+WHERE 
+  "MASTER"."ACTIVE" = 'Y' 
+  AND MASTER.TOTLIABAMT <> 0 
+  AND BASEEVENT.REFNO_PFIX = 'CRE' 
+  AND POSTING.DR_CR_FLG = 'D' 
+  AND POSTING.ACC_TYPE LIKE 'P%' 
+ 
+ORDER BY 
+  "MASTER"."MASTER_REF"
+  
+==============================================================================================
+  
+  SSIS Package Name: "FX Spotrate" and destination table : "mis_ExchRate"
+
+Data Source Script:
+
+SELECT
+C8CCY, 
+C8CCYN, 
+C8CUR,  
+C8SPT
+
+FROM KFILLIV.C8PF
+==============================================================================================
+
+Query for for mis_CustTypes Table 
+
+SELECT C4CTP as CustType,     
+C4CTD as CustTypeDescription  
+FROM KFILLIV.C4PF             
+
+=====================================

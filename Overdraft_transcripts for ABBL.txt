@@ -1,0 +1,242 @@
+ 
+
+ ================================================================================================
+  SSIS Package name "R1.CLOverdrafts_CL1F" & Destination Table "report_ClFinal1F"
+  
+  Data Source Script:
+  +++++++++++++++++++++++
+SELECT 
+  a.UNIQUE_AC_ID as UniqueID, 
+  a.ACBRANCH as ACBranch,
+  a.ACBASICNO as CustomerID, 
+  a.ACSUFFIX as ACSuffix,
+  a.ACREFERENCE as LoanIDNumber,
+  a.CUSTOMERTYPE as CustType,
+  a.ACTYPE as ACType,
+  a.ACCURRENCY as ACCurrency,
+  abs(cast(a.OVERDRAFTAMOUNT / 100 as decimal(18,2))) as SanctionedLimit, 
+  a.ODEXPIRYDATE as ExpiryDate,
+  a.ACSUNDRYANALYSISCODE as SundryAnalysisCode, 
+  a.ACANALYSISCODE as AnalysisCode,
+  trim(a.CURRENTCLSTATUS) as CurrentCLStatus, 
+  
+  case when currentclstatus ='00' then 'UC'
+		when currentclstatus ='01' then 'SM'
+		when currentclstatus ='SS' then 'SS'
+		when currentclstatus ='DF' then 'DF'
+		when currentclstatus ='BL' then 'BL'
+		else ''
+		end as CLStatus_OJ,
+		
+  case 	when currentclstatus in ('AC', 'SP', 'EA', 'WL') then 'UC'
+		when currentclstatus ='SM' then 'SM'
+		when currentclstatus ='SQ' then 'SS'
+		when currentclstatus ='DQ' then 'DF'
+		when currentclstatus ='BQ' then 'BL'
+		else ''
+		end as CLStatus_QJ,		
+
+   abs(cast(a.LASTCOBBALANCE/100 as decimal(18,2))) as OutstandingBalance, 
+  abs(cast(a.INTTADJUSTEDNOTPOSTED/100 as decimal(18,2))) as AdjustedInterest, 
+  abs(cast(a.ACCRUEDINTERESTTODATE/100 as decimal(18,2))) as AccruedInterest, 
+  abs(cast(a.TOTALINTERESTPOSTED/100 as decimal(18,2))) as TotalInterestPosted, 
+  abs(cast(a.NEXTPPBDAY/100 as decimal(18,2))) as CurrentMnthPPeriod, 
+  cast((abs(a.ACCRUEDINTERESTTODATE/100)-abs(a.NEXTPPBDAY/100)) as decimal(18,2)) as NetAccruedInterest,
+  --a.INITIALSANCTIONDATE, 
+  --a.INITIALSANCTIONAMOUNT / 100 as INITIALSANCTIONAMOUNT, 
+  --a.RENEWALNO as RenewalNos, 
+  --a.RENEWALAMT as RenewalAmount, 
+  --a.RENEWALDATE as RenewalDate, 
+  --a.SANCTIONINGAUTHORITY, 
+  --LastSanctionDate, 
+  --a.PRIMARYSECURITYVALUE, 
+  a.REFERENCEDATE as ReferenceDate,
+  b.CustomerName, 
+  b.CustSubType, 
+  b.ResidenceCountry, 
+  b.CusOnboardDate, 
+  b.Profession1, 
+  b.Profession2, 
+  b.Gender, 
+  b.NationalIDNumber, 
+  b.TradeLicenseNumber, 
+  b.TradeLicenseIssueDate, 
+  c.BranchNumber, 
+  c.BranchName, 
+  --c.BranchSubBranch, 
+  --c.ReportingBranch, 
+  --c.UrbanRural, 
+  coalesce(d.AssignedAmount, 0, d.AssignedAmount/100) as AssignedAmount, 
+  coalesce(d.CollateralValue, 0, d.CollateralValue/100) as CollateralValue,
+  coalesce(d.ColBankValue, 0, d.ColBankValue/100) as ColBankValue,
+  ACType as ProductType 
+FROM 
+  AccountMaster AS a 
+  INNER JOIN mis_CustomerBasicInfo AS b ON a.ACBASICNO = b.CustomerID 
+  INNER JOIN mis_BranchDetails AS c ON a.ACBRANCH = c.BranchNumber 
+  LEFT OUTER JOIN (
+    SELECT 
+      LOANUNIQID, 
+      SUM(ASSINEDAMOUNT) AS AssignedAmount, 
+      SUM(COLVALUE) AS CollateralValue, 
+      SUM(COLBANKVALUE) AS ColBankValue 
+    FROM 
+      CollateralBasicDetails 
+    GROUP BY 
+      LOANUNIQID
+  ) AS d ON a.UNIQUE_AC_ID = d.LOANUNIQID 
+  
+WHERE 
+   
+  AND LASTCOBBALANCE < 0 and a.OVERDRAFTAMOUNT<0
+  and ACTYPE in ('CB','CC','CD','CE','CF','CG','GA');
+
+    
+++++++++++++++++++++++++++++++++++++++++++++
+First we need to review the CurrentStatus Code then transform accordingly.
+Script Component 1:  to determine Objective Loan Status:
+
+{
+    string expiryDateStr = Row.ExpiryDate.ToString();
+    string referenceDateStr = Row.ReferenceDate.ToString();
+
+    if (expiryDateStr != "0")
+    {
+        //for expiry date
+        int century1 = int.Parse(expiryDateStr.Substring(0, 1));
+        int year1 = int.Parse(expiryDateStr.Substring(1, 2));
+        int month1 = int.Parse(expiryDateStr.Substring(3, 2));
+        int day1 = int.Parse(expiryDateStr.Substring(5, 2));
+
+
+        //for refenence date
+        int century2 = int.Parse(referenceDateStr.Substring(0, 1));
+        int year2 = int.Parse(referenceDateStr.Substring(1, 2));
+        int month2 = int.Parse(referenceDateStr.Substring(3, 2));
+        int day2 = int.Parse(referenceDateStr.Substring(5, 2));
+
+        // Adjust the century part (assuming 2000 for 1 and 1900 for 0)
+        // Convert both dates into total days
+        int totalDays1 = (century1 * 100 * 360) + (year1 * 360) + (month1 * 30) + day1;
+        int totalDays2 = (century2 * 100 * 360) + (year2 * 360) + (month2 * 30) + day2;
+
+        if (totalDays1 > totalDays2)
+        {
+            Row.CLStatusObjective = "UC";
+            Row.PeriodArears = 0;
+        }
+        else
+        {
+            // Calculate difference in days
+            int difference = Math.Abs(totalDays2 - totalDays1);
+            Row.PeriodArears = (difference / 30);
+
+            // Determine status based on difference
+            if (difference < 60)
+            {
+                Row.CLStatusObjective = "UC";
+            }
+            else if (difference >= 60 && difference <= 89)
+            {
+                Row.CLStatusObjective = "SM";
+            }
+            else if (difference >= 90 && difference <= 269)
+            {
+                Row.CLStatusObjective = "SS";
+            }
+            else if (difference >= 270 && difference <= 360)
+            {
+                Row.CLStatusObjective = "DF";
+            }
+            else if (difference > 360)
+            {
+                Row.CLStatusObjective = "BL";
+            }
+            else
+            {
+                Row.CLStatusObjective = "NA";
+            }
+        } 
++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+Script Component : 2 to review and finalize Classification Status:
+Input:  1. Row.CLStatusObjective (calculated in FinSoft)
+		2. Row.CLStatus_OJ , source CBS
+		3. Row.CLStatus_QJ , Source CBS
+Output: CLStatusObjectiveF
+		CLStatusQualitativeF
+
+		
+Objective:
+to get CL Status Code for Blank Status Code:
+
+Condition:
+///for Objective Status
+if (Row.CLStatus_OJ==''){Row.CLStatusObjectiveF=Row.CLStatusObjective}
+ else Row.CLStatusObjectiveF=Row.CLStatus_OJ;
+ 
+ ///for Qualitative Status
+if (Row.CLStatus_QJ=='' && Row.CLStatus_OJ!='' ){Row.CLStatusQualitativeF=Row.CLStatus_OJ}
+else Row.CLStatusQualitativeF=Row.CLStatusObjective;
++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++=
+
+Script Component 3: to determine Loan Category and SubCategory
+the below codes are to be re-write consdiering AnalysisCode & SundryAnalysisCode and ACType
+Identifier for Staff Account
+
+{
+    // Check conditions for loanCategory
+    if (Row.OVERDRAFTAMOUNT < 0 ) //LA is used to discard Staff OD//
+    {
+        Row.loanCategory = 1.ToString();
+        
+        if ((Row.SundryAnalysisCode == "MI" || Row.SundryAnalysisCode == "CT" || Row.SundryAnalysisCode == "ME" || Row.SundryAnalysisCode == "SE") 
+            && !new[] { "BH", "MB", "SD" }.Contains(Row.CustSubType))
+            {
+                Row.loanSubCategory = 1.ToString();
+            }
+        else if (Row.SundryAnalysisCode == "XX"||Row.SundryAnalysisCode == "N1"||Row.SundryAnalysisCode == "N2"||
+				Row.SundryAnalysisCode == "N3"||Row.SundryAnalysisCode == "N4"||Row.SundryAnalysisCode == "N5"||
+				Row.SundryAnalysisCode == "N6"||Row.SundryAnalysisCode == "N7") 
+				&& !new[] { "BH", "MB", "SD" }.Contains(Row.CustSubType)))
+           {
+               Row.loanSubCategory = 2.ToString();
+           }
+        else if (new[] { "BH", "MB", "SD" }.Contains(Row.CustSubType))
+           {
+              Row.loanSubCategory = 3.ToString();
+           }
+        else if (Row.SundryAnalysisCode == "LE" && !new[] { "BH", "MB", "SD" }.Contains(Row.CustSubType))
+           {
+            Row.loanSubCategory = 3.ToString();
+           }
+        ////Identification Parameter for Agri Finance//
+		
+        else if (Row.SundryAnalysisCode == "AF" && !new[] { "BH", "MB", "SD" }.Contains(Row.CustSubType))
+        {
+            Row.loanSubCategory = 4.ToString();
+        }
+    }
+        
+    ///Identification parameter needed for Staff Loan//
+	
+    else if (Row.OVERDRAFTAMOUNT < 0  && Row.ACType == "LA")
+    {
+        Row.loanCategory = 5.ToString();
+        Row.loanSubCategory = 21.ToString();
+    }
+
+    
+}
+
++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+Script Component - 3: to determine interest Suspense amount considering the Loan Status.
+
+   if (Row.CLStatusObjective == "SS" || Row.CLStatusObjective == "DF" || Row.CLStatusObjective == "BL"
+       ||Row.CLStatusObjective == "SQ"||Row.CLStatusObjective == "DQ"||Row.CLStatusObjective == "BQ")
+   {
+       Row.InterestSuspense = Row.NetAccruedInterest;
+   }
+   else
+   {
+       Row.InterestSuspense = 0;
+   }
