@@ -1,0 +1,7 @@
+[OLE DB Source [55]] Error: There was an error with OLE DB Source.Outputs[OLE DB Source Output].Columns[DEALTYPE] on OLE DB Source.Outputs[OLE DB Source Output]. The column status returned was: "The value could not be converted because of a potential loss of data.".
+
+
+[OLE DB Source [55]] Error: SSIS Error Code DTS_E_INDUCEDTRANSFORMFAILUREONERROR.  The "OLE DB Source.Outputs[OLE DB Source Output].Columns[DEALTYPE]" failed because error code 0xC0209072 occurred, and the error row disposition on "OLE DB Source.Outputs[OLE DB Source Output].Columns[DEALTYPE]" specifies failure on error. An error occurred on the specified object of the specified component.  There may be error messages posted before this with more information about the failure.
+
+
+[SSIS.Pipeline] Error: SSIS Error Code DTS_E_PRIMEOUTPUTFAILED.  The PrimeOutput method on OLE DB Source returned error code 0xC0209029.  The component returned a failure code when the pipeline engine called PrimeOutput(). The meaning of the failure code is defined by the component, but the error is fatal and the pipeline stopped executing.  There may be error messages posted before this with more information about the failure.
