@@ -1,0 +1,41 @@
+{
+    // Ensure SanctionedLimit is not null before checking condition
+    if (Row.SanctionedLimit != null && Row.SanctionedLimit < 0) 
+    {
+        Row.loanCategory = "1"; // Default Category for negative SanctionedLimit
+
+        if (Row.SundryAnalysisCode != null && new[] { "MI", "CT", "ME", "SE" }.Contains(Row.SundryAnalysisCode) &&
+            Row.CUSTSUBTYPE != null && !new[] { "BH", "MB", "SD" }.Contains(Row.CUSTSUBTYPE))
+        {
+            Row.loanSubCategory = "1";
+        }
+        else if (Row.SundryAnalysisCode != null && new[] { "XX", "N1", "N2", "N3", "N4", "N5", "N6", "N7" }.Contains(Row.SundryAnalysisCode) &&
+                 Row.CUSTSUBTYPE != null && !new[] { "BH", "MB", "SD" }.Contains(Row.CUSTSUBTYPE))
+        {
+            Row.loanSubCategory = "2";
+        }
+        else if (Row.CUSTSUBTYPE != null && new[] { "BH", "MB", "SD" }.Contains(Row.CUSTSUBTYPE))
+        {
+            Row.loanSubCategory = "3";
+        }
+        else if (Row.SundryAnalysisCode != null && Row.SundryAnalysisCode == "LE" &&
+                 Row.CUSTSUBTYPE != null && !new[] { "BH", "MB", "SD" }.Contains(Row.CUSTSUBTYPE))
+        {
+            Row.loanSubCategory = "3";
+        }
+        else if (Row.SundryAnalysisCode != null && Row.SundryAnalysisCode == "AF" &&
+                 Row.CUSTSUBTYPE != null && !new[] { "BH", "MB", "SD" }.Contains(Row.CUSTSUBTYPE))
+        {
+            Row.loanSubCategory = "4";
+        }
+        else
+        {
+            Row.loanSubCategory = "0"; // Assign a default value to prevent NULL
+        }
+    }
+    else
+    {
+        Row.loanCategory = "0"; // Assign a default value if SanctionedLimit >= 0
+        Row.loanSubCategory = "0"; // Prevent NULL assignment
+    }
+}
