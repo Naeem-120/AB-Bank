@@ -1,0 +1,31 @@
+{
+    if (Row.SanctionedLimit < 0) // LA is used to discard Staff OD
+    {
+        Row.loanCategory = "1";
+
+        if (new[] { "MI", "CT", "ME", "SE" }.Contains(Row.SundryAnalysisCode) &&
+            !new[] { "BH", "MB", "SD" }.Contains(Row.CUSTSUBTYPE))
+        {
+            Row.loanSubCategory = "1";
+        }
+        else if (new[] { "XX", "N1", "N2", "N3", "N4", "N5", "N6", "N7" }.Contains(Row.SundryAnalysisCode) &&
+                 !new[] { "BH", "MB", "SD" }.Contains(Row.CUSTSUBTYPE))
+        {
+            Row.loanSubCategory = "2";
+        }
+        else if (Row.SundryAnalysisCode == "LE" || 
+                 new[] { "BH", "MB", "SD" }.Contains(Row.CUSTSUBTYPE))
+        {
+            Row.loanSubCategory = "3";
+        }
+        else if (Row.SundryAnalysisCode == "AF" && 
+                 !new[] { "BH", "MB", "SD" }.Contains(Row.CUSTSUBTYPE))
+        {
+            Row.loanSubCategory = "4";
+        }
+        else
+        {
+            Row.loanSubCategory = "0"; // Assigning a default value to prevent null
+        }
+    }
+}
