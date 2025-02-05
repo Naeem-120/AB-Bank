@@ -1,0 +1,20 @@
+// For Objective Status
+if (string.IsNullOrEmpty(Row.CLStatusOJ)) 
+{
+    Row.CLStatusObjectiveF = Row.CLStatusObjective;
+}
+else 
+{
+    Row.CLStatusObjectiveF = Row.CLStatusOJ;
+}
+
+// For Qualitative Status
+if (string.IsNullOrEmpty(Row.CLStatusQJ)) 
+{
+    // If CLStatus_QJ is empty, fallback to CLStatus_OJ if it's not empty, otherwise fallback to CLStatusObjective
+    Row.CLStatusQualitativeF = !string.IsNullOrEmpty(Row.CLStatusOJ) ? Row.CLStatusOJ : Row.CLStatusObjective;
+}
+else 
+{
+    Row.CLStatusQualitativeF = Row.CLStatusQJ;
+}
