@@ -1,0 +1,77 @@
+   at Microsoft.SqlServer.Dts.Pipeline.PipelineBuffer.CheckStatusAndNull(Int32 columnIndex)
+   at Microsoft.SqlServer.Dts.Pipeline.PipelineBuffer.GetInt32(Int32 columnIndex)
+   at ScriptMain.Input0_ProcessInputRow(Input0Buffer Row)
+   at UserComponent.Input0_ProcessInput(Input0Buffer Buffer)
+   at UserComponent.ProcessInput(Int32 InputID, String InputName, PipelineBuffer Buffer, OutputNameMap OutputMap)
+   at Microsoft.SqlServer.Dts.Pipeline.ScriptComponent.ProcessInput(Int32 InputID, PipelineBuffer buffer)
+   at Microsoft.SqlServer.Dts.Pipeline.ScriptComponentHost.ProcessInput(Int32 inputID, PipelineBuffer buffer)
+   
+   
+   {
+    int overduePeriod, totalOverdueInstallment;
+
+
+    if (Row.OverDueDays < 30)
+    {
+        overduePeriod = 0;
+
+    }
+    else
+    {
+        double difference = Row.OverDueDays / 30;
+        overduePeriod = (int)Math.Floor(difference);
+    }
+
+    totalOverdueInstallment = overduePeriod;
+
+
+    // Initialize LoanStatusOBJ
+    //string Row.LoanStatusOBJ = "";
+
+    // Check if SundryAnalysisCode is "CT", "MI", or "SE"
+    if (Row.SundryAnalysisCode == "CT" || Row.SundryAnalysisCode == "MI" || Row.SundryAnalysisCode == "SE")
+    {
+        // Determine LoanStatusOBJ based on the NosOVDInst and upperLimit
+        if (totalOverdueInstallment < 5)
+            Row.LoanStatusOBJ = "UC";
+        else if (totalOverdueInstallment >= 5 && totalOverdueInstallment < 9)
+            Row.LoanStatusOBJ = "SM";
+        else if (totalOverdueInstallment >= 9 && totalOverdueInstallment < 21)
+            Row.LoanStatusOBJ = "SS";
+        else if (totalOverdueInstallment >= 21 && totalOverdueInstallment < 33)
+            Row.LoanStatusOBJ = "DF";
+        else
+            Row.LoanStatusOBJ = "BL";
+    }
+
+    else if (Row.SundryAnalysisCode == "AF")
+    {
+        // Determine LoanStatusOBJ based on the NosOVDInst and upperLimit
+        if (totalOverdueInstallment < 5)
+            Row.LoanStatusOBJ = "UC";
+        else if (totalOverdueInstallment >= 5 && totalOverdueInstallment < 12)
+            Row.LoanStatusOBJ = "SM";
+        else if (totalOverdueInstallment >= 12 && totalOverdueInstallment <= 36)
+            Row.LoanStatusOBJ = "SS";
+        else if (totalOverdueInstallment > 36 && totalOverdueInstallment <= 60)
+            Row.LoanStatusOBJ = "DF";
+        else
+            Row.LoanStatusOBJ = "BL";
+    }
+
+    else
+
+    {
+        // Determine LoanStatusOBJ for other SundryAnalysisCode values
+        if (totalOverdueInstallment < 5)
+            Row.LoanStatusOBJ = "UC";
+        else if (totalOverdueInstallment > 4 && totalOverdueInstallment < 6)
+            Row.LoanStatusOBJ = "SM";
+        else if (totalOverdueInstallment >= 6 && totalOverdueInstallment < 12)
+            Row.LoanStatusOBJ = "SS";
+        else if (totalOverdueInstallment >= 12 && totalOverdueInstallment < 15)
+            Row.LoanStatusOBJ = "DF";
+        else
+            Row.LoanStatusOBJ = "BL";
+    }
+}
