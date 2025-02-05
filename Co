@@ -1,0 +1,60 @@
+int overduePeriod = 0, totalOverdueInstallment = 0;
+int overdueDays = 0; // Default value if OverDueDays is NULL
+
+// Check for NULL before accessing the column
+if (!Row.OverDueDays_IsNull)
+{
+    overdueDays = Row.OverDueDays;
+}
+
+// Calculate overdue period
+if (overdueDays >= 30)
+{
+    double difference = overdueDays / 30.0;
+    overduePeriod = (int)Math.Floor(difference);
+}
+
+totalOverdueInstallment = overduePeriod;
+
+// Check if SundryAnalysisCode is "CT", "MI", or "SE"
+if (Row.SundryAnalysisCode == "CT" || Row.SundryAnalysisCode == "MI" || Row.SundryAnalysisCode == "SE")
+{
+    if (totalOverdueInstallment < 5)
+        Row.LoanStatusOBJ = "UC";
+    else if (totalOverdueInstallment < 9)
+        Row.LoanStatusOBJ = "SM";
+    else if (totalOverdueInstallment < 21)
+        Row.LoanStatusOBJ = "SS";
+    else if (totalOverdueInstallment < 33)
+        Row.LoanStatusOBJ = "DF";
+    else
+        Row.LoanStatusOBJ = "BL";
+}
+
+else if (Row.SundryAnalysisCode == "AF")
+{
+    if (totalOverdueInstallment < 5)
+        Row.LoanStatusOBJ = "UC";
+    else if (totalOverdueInstallment < 12)
+        Row.LoanStatusOBJ = "SM";
+    else if (totalOverdueInstallment <= 36)
+        Row.LoanStatusOBJ = "SS";
+    else if (totalOverdueInstallment <= 60)
+        Row.LoanStatusOBJ = "DF";
+    else
+        Row.LoanStatusOBJ = "BL";
+}
+
+else
+{
+    if (totalOverdueInstallment < 5)
+        Row.LoanStatusOBJ = "UC";
+    else if (totalOverdueInstallment < 6)
+        Row.LoanStatusOBJ = "SM";
+    else if (totalOverdueInstallment < 12)
+        Row.LoanStatusOBJ = "SS";
+    else if (totalOverdueInstallment < 15)
+        Row.LoanStatusOBJ = "DF";
+    else
+        Row.LoanStatusOBJ = "BL";
+}
