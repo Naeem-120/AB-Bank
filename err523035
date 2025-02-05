@@ -1,0 +1,9 @@
+{
+    ///for Objective Status
+    if (!string.IsNullOrEmpty(Row.CLStatusOJ)) { Row.CLStatusObjectiveF = Row.CLStatusObjective; }
+    else Row.CLStatusObjectiveF = Row.CLStatusOJ;
+
+    ///for Qualitative Status
+    if (!string.IsNullOrEmpty(Row.CLStatusQJ) && !string.IsNullOrEmpty(Row.CLStatusOJ)) { Row.CLStatusQualitativeF = Row.CLStatusQJ; }
+    else Row.CLStatusQualitativeF = Row.CLStatusObjective;
+}
