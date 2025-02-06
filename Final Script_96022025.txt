@@ -1,0 +1,82 @@
+
+Transformation 1
+
+{
+    Row.FinalCLStatusO = Row.CLStatusQualitative;
+    if (Row.CLStatusObjective != Row.CLStatusQualitative)
+        Row.ClassificationBasisO = "QJ";
+    else
+        Row.ClassificationBasisO = "OB";
+  }
+
+
+
+++++++++++++++++++++++++++++++++++++++++
+
+Transformation 2
+
+    {
+        // Calculate Time Equivalent Paid
+        Row.TimeEqvPaid = (Row.InstllmentAmount == 0) ? 0 : Row.TotalInstlAmountPaid / Row.InstllmentAmount;
+
+
+        // Set Outstanding Balance Based on Classification Status
+        Row.OutBalUC = Row.FinalCLStatusO.ToString() == "UC" ? Row.OutstandingBalance : 0m;
+        Row.OutBalSM = Row.FinalCLStatusO.ToString() == "SM" ? Row.OutstandingBalance : 0m;
+        decimal outBalSS = Row.OutBalSS = Row.FinalCLStatusO.ToString() == "SS" ? Row.OutstandingBalance : 0m;
+        decimal outBalDF = Row.OutBalDF = Row.FinalCLStatusO.ToString() == "DF" ? Row.OutstandingBalance : 0m;
+        decimal outBalBL = Row.OutBalBL = Row.FinalCLStatusO.ToString() == "BL" ? Row.OutstandingBalance : 0m;
+        // Calculate Default Amount
+
+        // Row.OutBalDF_IsNull ? 0m : Row.OutBalDF;
+        // Row.OutBalBL_IsNull ? 0m : Row.OutBalBL;
+        Row.DefaultAmountO = outBalSS + outBalDF + outBalBL;
+
+        // Set Suspense Amount Based on Classification Status
+        Row.SusAmtUC = Row.FinalCLStatusO.ToString() == "UC" ? Row.InterestSuspense : 0m;
+        Row.SusAmtSM = Row.FinalCLStatusO.ToString() == "SM" ? Row.InterestSuspense : 0m;
+        Row.SusAmtSS = Row.FinalCLStatusO.ToString() == "SS" ? Row.InterestSuspense : 0m;
+        Row.SusAmtDF = Row.FinalCLStatusO.ToString() == "DF" ? Row.InterestSuspense : 0m;
+        Row.SusAmtBL = Row.FinalCLStatusO.ToString() == "BL" ? Row.InterestSuspense : 0m;
+
+        // Calculate Base Provision
+        decimal Baseprovison = Row.OutstandingBalance - Row.InterestSuspense - Row.CollateralSecAmount;
+        Baseprovison = Math.Max(0, Baseprovison); // Ensure Baseprovison is not negative
+
+        decimal BaseProvisionCL = Row.OutstandingBalance;
+
+        // Set Provision Amount Based on Objective Status
+        Row.ProvUC = Row.FinalCLStatusO.ToString() == "UC" ? BaseProvisionCL : 0m;
+        Row.ProvSM = Row.FinalCLStatusO.ToString() == "SM" ? BaseProvisionCL : 0m;
+        Row.ProvSS = Row.FinalCLStatusO.ToString() == "SS" ? Baseprovison : 0m;
+        Row.ProvDF = Row.FinalCLStatusO.ToString() == "DF" ? Baseprovison : 0m;
+        Row.ProvBL = Row.FinalCLStatusO.ToString() == "BL" ? Baseprovison : 0m;
+
+        // Calculate Required Provision
+        if (Row.FinalCLStatusO.ToString() == "UC" && !Row.ProvPctUC_IsNull)
+        {
+            Row.ProvReqO = BaseProvisionCL * Row.ProvPctUC / 100;
+        }
+        else if (Row.FinalCLStatusO.ToString() == "SM" && !Row.ProvPctSM_IsNull)
+        {
+            Row.ProvReqO = BaseProvisionCL * Row.ProvPctSM / 100;
+        }
+        else if (Row.FinalCLStatusO.ToString() == "SS" && !Row.ProvPctSS_IsNull)
+        {
+            Row.ProvReqO = Baseprovison * Row.ProvPctSS / 100;
+        }
+        else if (Row.FinalCLStatusO.ToString() == "DF" && !Row.ProvPctDF_IsNull)
+        {
+            Row.ProvReqO = Baseprovison * Row.ProvPctDF / 100;
+        }
+        else if (Row.FinalCLStatusO.ToString() == "BL" && !Row.ProvPctBL_IsNull)
+        {
+            Row.ProvReqO = Baseprovison * Row.ProvPctBL / 100;
+        }
+        else
+        {
+            Row.ProvReqO = 0m; // Default to zero if no condition is met
+        }
+
+    }
+}
