@@ -1,0 +1,3 @@
+[ADO NET Destination [89]] Error: An exception has occurred during data insertion, the message returned from the provider is: Received an invalid column length from the bcp client for colid 16.
+
+[SSIS.Pipeline] Error: SSIS Error Code DTS_E_PROCESSINPUTFAILED.  The ProcessInput method on component "ADO NET Destination" (89) failed with error code 0xC020844B while processing input "ADO NET Destination Input" (96). The identified component returned an error from the ProcessInput method. The error is specific to the component, but the error is fatal and will cause the Data Flow task to stop running.  There may be error messages posted before this with more information about the failure.
