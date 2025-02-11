@@ -1,0 +1,106 @@
+SELECT 
+    a.UniqueID, 
+    b.CategoryName, 
+    c.CategoryDetails, 
+    a.ProductType, 
+    a.ACBranch, 
+    a.ReportingBranch, 
+    a.BranchName, 
+    a.CustomerID, 
+    a.BorrowerName, 
+    a.LoanIDNumber, 
+    a.Currency, 
+    a.NatureofLoans, 
+    f.EconSectCode,
+    f.EconPurposeCode,
+    h.[EconPDescription],
+    a.SanctionedLimit, 
+    a.LastSanctionDate,
+    a.ExpiryDate, 
+    a.CLStatus_Objective, 
+    a.CLStatus_Qualitative, 
+    a.OutstandingBalance, 
+    BBProdCode,
+    t.ACType,
+    t.goodscode,
+    t.SELLER_COUNTRY,
+    t.buyer_country,
+
+    -- Consolidated CASE for BillsCode
+    CASE 
+        -- First set of conditions (SELLER_COUNTRY <> 'BD' and specific GOODSCODE patterns)
+        WHEN f.ACType IN ('PE', 'PF', 'PG', 'PH', 'PK', 'PL', 'PM', 'PS', 'PQ', 'PR', 'PS') 
+             AND t.SELLER_COUNTRY <> 'BD' AND t.GOODSCODE LIKE '00%' THEN '11'
+        WHEN f.ACType IN ('PE', 'PF', 'PG', 'PH', 'PK', 'PL', 'PM', 'PS', 'PQ', 'PR', 'PS') 
+             AND t.SELLER_COUNTRY <> 'BD' AND t.GOODSCODE = '0270B' THEN '12'
+        WHEN f.ACType IN ('PE', 'PF', 'PG', 'PH', 'PK', 'PL', 'PM', 'PS', 'PQ', 'PR', 'PS') 
+             AND t.SELLER_COUNTRY <> 'BD' 
+             AND (t.GOODSCODE LIKE '029%' OR t.GOODSCODE LIKE '030%' OR t.GOODSCODE LIKE '031%') THEN '13'
+       WHEN f.ACType IN ('PE', 'PF', 'PG', 'PH', 'PK', 'PL', 'PM', 'PS', 'PQ', 'PR', 'PS') 
+             AND t.SELLER_COUNTRY <> 'BD' AND (t.GOODSCODE NOT LIKE '00%' AND t.GOODSCODE <> '0270B' AND
+			 t.GOODSCODE NOT LIKE '029%' AND t.GOODSCODE NOT LIKE '030%' AND t.GOODSCODE NOT LIKE '031%') THEN '19'
+
+        -- Second set of conditions (buyer_country <> 'BD' and specific GOODSCODE values)
+        WHEN f.ACType IN ('PC', 'PD', 'PI', 'PJ', 'PN') AND t.buyer_country <> 'BD' AND t.GOODSCODE = 'EJ005' THEN '31'
+        WHEN f.ACType IN ('PC', 'PD', 'PI', 'PJ', 'PN') AND t.buyer_country <> 'BD' 
+             AND t.GOODSCODE IN ('EJ010', 'EJ015', 'EJ020', 'EJ025', 'EJ030', 'EJ060') THEN '32'
+        WHEN f.ACType IN ('PC', 'PD', 'PI', 'PJ', 'PN') AND t.buyer_country <> 'BD' AND t.GOODSCODE = 'ET005' THEN '33'
+        WHEN f.ACType IN ('PC', 'PD', 'PI', 'PJ', 'PN') AND t.buyer_country <> 'BD' 
+             AND t.GOODSCODE IN ('EL005', 'EL010') THEN '34'
+        WHEN f.ACType IN ('PC', 'PD', 'PI', 'PJ', 'PN') AND t.buyer_country <> 'BD' 
+             AND t.GOODSCODE IN ('EG005', 'EG010', 'EG015') THEN '35'
+        WHEN f.ACType IN ('PC', 'PD', 'PI', 'PJ', 'PN') AND t.buyer_country <> 'BD' AND t.GOODSCODE = 'ES005' THEN '36'
+        WHEN f.ACType IN ('PC', 'PD', 'PI', 'PJ', 'PN') AND t.buyer_country <> 'BD' AND t.GOODSCODE = 'EH005' THEN '37'
+        WHEN f.ACType IN ('PC', 'PD', 'PI', 'PJ', 'PN') AND t.buyer_country <> 'BD' AND (t.GOODSCODE NOT LIKE 'EJ%' AND
+		t.GOODSCODE NOT IN ('ET005','EL005','EL010') AND t.GOODSCODE NOT LIKE 'EG%') THEN '39'
+		-- Third set of conditions (specific ACType)
+        WHEN f.ACType = 'PB' THEN '41'
+
+        -- Fourth set of conditions (both countries are 'BD')
+        WHEN t.SELLER_COUNTRY = 'BD' AND t.buyer_country = 'BD' THEN '62'
+
+		WHEN t.SELLER_COUNTRY <> t.buyer_country  THEN '49'
+        -- Default value
+        ELSE '69'
+        END AS BillsCode,
+
+    -- LoanCLStatus CASE
+    CASE 
+        WHEN CLStatus_Qualitative = 'UC' THEN '0'    
+        WHEN CLStatus_Qualitative = 'SM' THEN '1'
+        WHEN CLStatus_Qualitative = 'SS' THEN '2'
+        WHEN CLStatus_Qualitative = 'DF' THEN '3'
+        WHEN CLStatus_Qualitative = 'BL' THEN '4'
+        ELSE 'NA' 
+    END AS LoanCLStatus,
+
+    -- SMECode CASE
+    CASE 
+        WHEN f.C1UserCode = 'SE' AND f.BusServSector = 'SC' THEN '11'
+        WHEN f.C1UserCode = 'SE' AND f.BusServSector = 'TC' THEN '12'
+        WHEN f.C1UserCode = 'SE' AND f.BusServSector = 'MC' THEN '13'
+        WHEN f.C1UserCode = 'ME' AND f.BusServSector = 'SC' THEN '21'
+        WHEN f.C1UserCode = 'ME' AND f.BusServSector = 'TC' THEN '22'
+        WHEN f.C1UserCode = 'ME' AND f.BusServSector = 'MC' THEN '23'
+        WHEN f.C1UserCode = 'MI' AND f.BusServSector = 'SC' THEN '31'
+        WHEN f.C1UserCode = 'MI' AND f.BusServSector = 'TC' THEN '32'
+        WHEN f.C1UserCode = 'MI' AND f.BusServSector = 'MC' THEN '33'
+        WHEN f.C1UserCode = 'CT' THEN '43'
+        WHEN f.C1UserCode = 'LM' THEN '91'
+        ELSE '99' 
+    END AS SMECode,
+
+    RIGHT(k.FI_BranchCode, 4) AS FIBranchCode,
+	'1' as ACCount
+
+FROM 
+    report_ClFinal AS a 
+    INNER JOIN report_cl1_LoanCategory AS b ON a.LoanCategory = b.ID 
+    INNER JOIN report_cl1_LoanCategoryDetails AS c ON a.LoanSubType = c.ID 
+    LEFT JOIN mis_TIPLus AS t ON a.UniqueID = t.UniqueID
+    LEFT JOIN [dbo].[SBSACMaster] AS f ON t.BO_ACC_NO = f.UniqueID
+    LEFT JOIN [dbo].[Static_EconPurposeCode] AS h ON f.EconPurposeCode = h.[EconPCode]
+    LEFT JOIN [dbo].[ProductDescription] AS i ON a.ProductType = i.ProductType
+    LEFT JOIN [dbo].[Static_BB_BranchCode] AS k ON a.ReportingBranch = k.BranchNumber
+WHERE 
+    A.ProductType IN ('DLN', 'ECC', 'FDP', 'FDU', 'PAC', 'PAE', 'PAF', 'PAI', 'PAO', 'PCC', 'PS9', 'IDP', 'LTR');
