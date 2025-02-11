@@ -1,0 +1,210 @@
+Requirement  for SBS3Advances & Bills
+
+1. Table :  Static_BB_BranchCode for FI Branch Code
+			ProductDescription for BB Product Code
+			ProductType
+LGZ
+LGP
+CreditCard
+IDB
+LNB
+EDF
+LGQ
+PRB
+KTL
+FTP
+LNC
+LUT
+LNE
+ZCB
+GA
+LG
+FSP
+EDP
+44X
+LNS
+LN3
+44Y
+52P
+FDB
+BLC
+FEL
+LNJ
+52R
+HTL
+XGD
+LGH
+LN4
+LNA
+LGM
+LGL
+LTL
+LTR
+PLC
+XGE
+LN2
+LN1
+LGD
+LNI
+LGR
+LGE
+CI
+LGG
+LRS
+KGE
+KUT
+LA
+KGD
+LND
+
+2. Collateral types:
+COLTYPE	COLDESCRIPTION
+LAB	Lien-Account Balance               
+LWB	Lien-WEDB                          
+GRC	Guarantee-Corporate                
+SCL	Real Estate-Land Building          
+LFD	Lien-Fixed deposit                 
+FFA	1st Charge-Fixed&Floating Asset    
+LIU	Lien-ICB Unit Certificate          
+PPC	Paripassu Charge                   
+SCM	Capital Machinery                  
+HRM	Hypo-Raw Materials                 
+SFA	2nd Charge-Fixed & Floating Asset  
+MBL	Mortgage-Building/Flat/Apartment   
+MLB	Mortgage-Land with Building        
+SCF	Real Estate-Flat                   
+HYP	Hypo-Other Items                   
+LIB	Lien-Investment in Premium Bond    
+HFG	Hypo-Finished Goods                
+MFL	Mortgage-Freehold land             
+ABR	Assignment-Bills Receivables       
+GRP	Guarantee-Personal                 
+ABD	Assignment-Book Debts              
+LDP	Lien-Deposit Pension Scheme        
+MMV	Mortgage-Vehicle/Vessel            
+HMV	Hypo-Motor Vehicle                 
+POG	Pledge-Other Items                 
+HCG	Hypo-Consumable Goods              
+HEQ	Hypo-Equipments & Tools            
+HPM	Hypo-Plant & Machinery             
+HST	Hypo-Stock in Trade                
+HFF	Hypo-Furniture & Fixtures          
+
+available code used in Overdraft:
+
+COLTYPE	COLDESCRIPTION
+LAB	Lien-Account Balance               
+LWB	Lien-WEDB                          
+GRC	Guarantee-Corporate                
+SCL	Real Estate-Land Building          
+LFD	Lien-Fixed deposit                 
+FFA	1st Charge-Fixed&Floating Asset    
+SCM	Capital Machinery                  
+MBL	Mortgage-Building/Flat/Apartment   
+MLB	Mortgage-Land with Building        
+SCF	Real Estate-Flat                   
+MFL	Mortgage-Freehold land             
+GRP	Guarantee-Personal                 
+LDP	Lien-Deposit Pension Scheme        
+HST	Hypo-Stock in Trade                
+NULL	NULL
+			
+			
+SELECT 
+ 	a.UniqueID, 
+    b.CategoryName, 
+    c.CategoryDetails, 
+    a.ProductType, 
+    a.ACBranch, 
+    a.ReportingBranch, 
+    a.BranchName, 
+    a.CustomerID, 
+    a.BorrowerName, 
+    a.LoanIDNumber, 
+    a.Currency, 
+    a.NatureofLoans, 
+	f.SECTORCODE,
+	f.ECONOMICPURPOSECODE,
+	h.[EconPDescription],
+    a.SanctionedLimit, 
+	a.LastSanctionDate,
+    a.ExpiryDate, 
+    a.CLStatus_Objective, 
+    a.CLStatus_Qualitative, 
+    a.OutstandingBalance, 
+    a.PeriodArrears, 
+    a.InstllmentAmount, 
+    COALESCE (a.InstallmentFrequency, 0) AS InstallmentFrequency, 
+    a.TotalInstlAmountPaid, 
+    a.TimeEqvInstlPaid, 
+    COALESCE (d.DRINTERESTRATE, 0.00) AS InterestRate, 
+    COALESCE (
+      ABS(
+        CAST(
+          (d.DRINTERESTACCRUED / 100) AS DECIMAL(18, 2)
+        )
+      ), 
+      0.00
+    ) AS AccruedInterest, 
+    COALESCE (e.SUSPRVQ, 0.00) AS LastQuarterInttSuspense, 
+    a.Sus_Total AS CurrentQuarterInttSuspense, 
+    ABS(
+      CAST(
+        a.CollateralSecAmount AS DECIMAL(18, 2)
+      )
+    ) AS ElligibleSecurityValue, 
+	g.[COLTYPE] as ColType,
+	g.[COLDESCRIPTION] as ColTypeDescription,
+    COALESCE (e.PROVREQ, 0.00) AS LastQuarterProvRequired, 
+    a.RequiredProvAmount, 
+    a.RNL_RSDL_Amount AS RescheduledAmount, 
+    a.NosRNL_RSDL AS NosTimes_Reschedulement, 
+    COALESCE (a.RNL_RSDL_Date, 0) AS ReschedulementDate,
+	BBProdCode,
+    case when (g.COLTYPE is not null and g.COLTYPE in ('AA','AB','AE','AF','AG')) then '60'
+		 when (g.COLTYPE is not null and g.COLTYPE in ('AC','AD','AI')) then '50'
+		 when (g.COLTYPE is not null and g.COLTYPE in ('AL','AJ','AK','AM','AQ')) then '20'
+		 when (g.COLTYPE is not null and g.COLTYPE='AN') then '40'
+	     when (g.COLTYPE is null and f.ECONOMICPURPOSECODE in ('9871','9899','9900')) then '76' 
+		 when (g.COLTYPE is null and f.ECONOMICPURPOSECODE='9874') then '60'
+		 when (g.COLTYPE is null and f.ECONOMICPURPOSECODE='8499') then '35'
+		 when (g.COLTYPE is null and a.ProductType='C3LU') then '39'
+		 else '80' end as SecurityCode,
+   case when CLStatus_Qualitative='UC' then '0'	
+        when CLStatus_Qualitative='SM' then '1'
+		when CLStatus_Qualitative='SS' then '2'
+		when CLStatus_Qualitative='DF' then '3'
+		when CLStatus_Qualitative='BL' then '4'
+		else 'NA' end as LoanCLStatus,
+   Case when f.ACSUNDRYANALYSISCODE='SE' and f.ECONOMICPURPOSECODE='SC' then '11' ---Sundry AnalaysisCode & economic purpose code
+        when f.ACSUNDRYANALYSISCODE='SE' and f.ECONOMICPURPOSECODE='TC' then '12'
+		when f.ACSUNDRYANALYSISCODE='SE' and f.ECONOMICPURPOSECODE='MC' then '13'
+		when f.ACSUNDRYANALYSISCODE='ME' and f.ECONOMICPURPOSECODE='SC' then '21'
+		when f.ACSUNDRYANALYSISCODE='ME' and f.ECONOMICPURPOSECODE='TC' then '22'
+		when f.ACSUNDRYANALYSISCODE='ME' and f.ECONOMICPURPOSECODE='MC' then '23'
+		when f.ACSUNDRYANALYSISCODE='MI' and f.ECONOMICPURPOSECODE='SC' then '31'
+		when f.ACSUNDRYANALYSISCODE='MI' and f.ECONOMICPURPOSECODE='TC' then '32'
+		when f.ACSUNDRYANALYSISCODE='MI' and f.ECONOMICPURPOSECODE='MC' then '33'
+		when f.ACSUNDRYANALYSISCODE='CT' then '43'
+		when f.ACSUNDRYANALYSISCODE='LE' then '91'
+		else '99' end as SMECode,
+		RIGHT(k.FI_BranchCode,4) as FIBranchCode, 
+		'1' as ACCount,
+		[ACSUNDRYANALYSISCODE]	
+
+
+  FROM 
+    report_ClFinal AS a 
+    INNER JOIN report_cl1_LoanCategory AS b ON a.LoanCategory = b.ID 
+    INNER JOIN report_cl1_LoanCategoryDetails AS c ON a.LoanSubType = c.ID 
+    LEFT JOIN [dbo].[AccountInterestRate] AS d ON a.UniqueID = d.UNIQUEACID 
+    LEFT JOIN InterestSupense AS e ON a.LoanIDNumber = e.UniqueID 
+	LEFT JOIN [dbo].[AccountMaster] AS f on a.UniqueID=f.UNIQUE_AC_ID
+	--LEFT JOIN [dbo].[SBSACMaster] AS f ON a.UniqueID=f.UniqueID
+	left join (select [LOANUNIQID],[COLTYPE],[COLDESCRIPTION] from [dbo].[CollateralBasicDetails] 
+	           group by LOANUNIQID,[COLTYPE],[COLDESCRIPTION]) as g on a.UniqueID=g.LOANUNIQID
+	left join [dbo].[Static_EconPurposeCode] as h on f.[ECONOMICPURPOSECODE]=h.[EconPCode]
+	left join [dbo].[ProductDescription] as i on a.ProductType=i.ProductType
+	left join [dbo].[Static_BB_BranchCode] as k on a.ReportingBranch=k.BranchNumber
+  WHERE 
+  SanctionedLimit<>0 and a.ProductType in  ('LA','LG','GA', 'CI');
