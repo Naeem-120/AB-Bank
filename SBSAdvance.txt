@@ -1,0 +1,201 @@
+
+  SELECT 
+ 	a.UniqueID, 
+    b.CategoryName, 
+    c.CategoryDetails, 
+    a.ProductType, 
+    a.ACBranch, 
+    a.ReportingBranch, 
+    a.BranchName, 
+    a.CustomerID, 
+    a.BorrowerName, 
+    a.LoanIDNumber, 
+    a.Currency, 
+    a.NatureofLoans, 
+	f.EconSectCode,
+	f.EconPurposeCode,
+	h.[EconPDescription],
+    a.SanctionedLimit, 
+	a.LastSanctionDate,
+    a.ExpiryDate, 
+    a.CLStatus_Objective, 
+    a.CLStatus_Qualitative, 
+    a.OutstandingBalance, 
+    a.PeriodArrears, 
+    a.InstllmentAmount, 
+    COALESCE (a.InstallmentFrequency, 0) AS InstallmentFrequency, 
+    a.TotalInstlAmountPaid, 
+    a.TimeEqvInstlPaid, 
+    COALESCE (d.DRINTERESTRATE, 0.00) AS InterestRate, 
+    COALESCE (
+      ABS(
+        CAST(
+          (d.DRINTERESTACCRUED / 100) AS DECIMAL(18, 2)
+        )
+      ), 
+      0.00
+    ) AS AccruedInterest, 
+    COALESCE (e.SUSPRVQ, 0.00) AS LastQuarterInttSuspense, 
+    a.Sus_Total AS CurrentQuarterInttSuspense, 
+    ABS(
+      CAST(
+        a.CollateralSecAmount AS DECIMAL(18, 2)
+      )
+    ) AS ElligibleSecurityValue, 
+	g.[COLTYPE] as ColType,
+	g.[COLDESCRIPTION] as ColTypeDescription,
+    COALESCE (e.PROVREQ, 0.00) AS LastQuarterProvRequired, 
+    a.RequiredProvAmount, 
+    a.RNL_RSDL_Amount AS RescheduledAmount, 
+    a.NosRNL_RSDL AS NosTimes_Reschedulement, 
+    COALESCE (a.RNL_RSDL_Date, 0) AS ReschedulementDate,
+	BBProdCode,
+    case when (g.COLTYPE is not null and g.COLTYPE in ('AA','AB','AE','AF','AG')) then '60'
+		 when (g.COLTYPE is not null and g.COLTYPE in ('AC','AD','AI')) then '50'
+		 when (g.COLTYPE is not null and g.COLTYPE in ('AL','AJ','AK','AM','AQ')) then '20'
+		 when (g.COLTYPE is not null and g.COLTYPE='AN') then '40'
+	     when (g.COLTYPE is null and f.EconPurposeCode in ('9871','9899','9900')) then '76' 
+		 when (g.COLTYPE is null and f.EconPurposeCode='9874') then '60'
+		 when (g.COLTYPE is null and f.EconPurposeCode='8499') then '35'
+		 when (g.COLTYPE is null and a.ProductType='C3LU') then '39'
+		 else '80' end as SecurityCode,
+   case when CLStatus_Qualitative='UC' then '0'	
+        when CLStatus_Qualitative='SM' then '1'
+		when CLStatus_Qualitative='SS' then '2'
+		when CLStatus_Qualitative='DF' then '3'
+		when CLStatus_Qualitative='BL' then '4'
+		else 'NA' end as LoanCLStatus,
+   Case when f.C1UserCode='SE' and f.BusServSector='SC' then '11' ---Sundry AnalaysisCode & economic purpose code
+        when f.C1UserCode='SE' and f.BusServSector='TC' then '12'
+		when f.C1UserCode='SE' and f.BusServSector='MC' then '13'
+		when f.C1UserCode='ME' and f.BusServSector='SC' then '21'
+		when f.C1UserCode='ME' and f.BusServSector='TC' then '22'
+		when f.C1UserCode='ME' and f.BusServSector='MC' then '23'
+		when f.C1UserCode='MI' and f.BusServSector='SC' then '31'
+		when f.C1UserCode='MI' and f.BusServSector='TC' then '32'
+		when f.C1UserCode='MI' and f.BusServSector='MC' then '33'
+		when f.C1UserCode='CT' then '43'
+		when f.C1UserCode='LM' then '91'
+		else '99' end as SMECode,
+		RIGHT(k.FI_BranchCode,4) as FIBranchCode, 
+		'1' as ACCount
+
+  FROM 
+    report_ClFinal AS a 
+    INNER JOIN report_cl1_LoanCategory AS b ON a.LoanCategory = b.ID 
+    INNER JOIN report_cl1_LoanCategoryDetails AS c ON a.LoanSubType = c.ID 
+    LEFT JOIN [dbo].[AccountInterestRate] AS d ON a.UniqueID = d.UNIQUEACID 
+    LEFT JOIN InterestSupense AS e ON a.LoanIDNumber = e.UniqueID 
+	LEFT JOIN [dbo].[SBSACMaster] AS f ON a.UniqueID=f.UniqueID
+	left join (select [LOANUNIQID],[COLTYPE],[COLDESCRIPTION] from [dbo].[CollateralBasicDetails] 
+	           group by LOANUNIQID,[COLTYPE],[COLDESCRIPTION]) as g on a.UniqueID=g.LOANUNIQID
+	left join [dbo].[Static_EconPurposeCode] as h on f.EconPurposeCode=h.[EconPCode]
+	left join [dbo].[ProductDescription] as i on a.ProductType=i.ProductType
+	left join [dbo].[Static_BB_BranchCode] as k on a.ReportingBranch=k.BranchNumber
+  WHERE 
+    A.ProductType IN ('C3LA','C3LB','C3LC','C3LD','C3LE','C3LG','C3LH','C3LJ','C3LK','C3LR','C3LS','C3LT','C3LU','C3LV',
+'C3OA','C3OB','C3OC','C3OD','C3OE','C3OG','C3OJ','C3OK','HG','HH','HI','HJ','HK','HL','HM','HN','HO','HP','HQ','HR','HS','HT',
+'HU','HV','HW','HY','HZ','KA','KF','NM', 'NN', 'NO', 'NP')
+
+
+union all
+
+  SELECT 
+    a.UniqueID, 
+    b.CategoryName, 
+    c.CategoryDetails, 
+    a.ProductType, 
+    a.ACBranch, 
+    a.ReportingBranch, 
+    a.BranchName, 
+    a.CustomerID, 
+    a.BorrowerName, 
+    a.LoanIDNumber, 
+    a.Currency, 
+    a.NatureofLoans, 
+	f.SECOTORCODE as EconSectCode,
+	f.ECONOMICPURPOSECODE as EconPurposeCode,
+	h.[EconPDescription],
+    a.SanctionedLimit, 
+	a.LastSanctionDate,
+    a.ExpiryDate, 
+    a.CLStatus_Objective, 
+    a.CLStatus_Qualitative, 
+    a.OutstandingBalance, 
+    a.PeriodArrears, 
+    a.InstllmentAmount, 
+    COALESCE (a.InstallmentFrequency, 0) AS InstallmentFrequency, 
+    a.TotalInstlAmountPaid, 
+    a.TimeEqvInstlPaid, 
+    COALESCE (d.CURRENTEFFECTIVERATE, 0.00) AS InterestRate, 
+    COALESCE (
+      ABS(
+        CAST(
+          (d.ACCRUEDINTEREST / 100) AS DECIMAL(18, 2)
+        )
+      ), 
+      0.00
+    ) AS AccruedInterest, 
+    COALESCE (e.SUSPRVQ, 0.00) AS LastQuarterInttSuspense, 
+    a.Sus_Total AS CurrentQuarterInttSuspense, 
+    ABS(
+      CAST(
+        (a.CollateralSecAmount) AS DECIMAL(18, 2)
+      )
+    ) AS ElligibleSecurityValue, 
+	g.[COLTYPE] as ColType,
+	g.[COLDESCRIPTION] as ColTypeDescription,
+    COALESCE (e.PROVREQ, 0.00) AS LastQuarterProvRequired, 
+    a.RequiredProvAmount, 
+    a.RNL_RSDL_Amount AS RescheduledAmount, 
+    a.NosRNL_RSDL AS NosTimes_Reschedulement, 
+    COALESCE (a.RNL_RSDL_Date, 0) AS ReschedulementDate,
+	[BBProdCode],
+	case when (g.COLTYPE is not null and g.COLTYPE in ('AA','AB','AE','AF','AG')) then '60'
+		 when (g.COLTYPE is not null and g.COLTYPE in ('AC','AD','AI')) then '50'
+		 when (g.COLTYPE is not null and g.COLTYPE in ('AL','AJ','AK','AM','AQ')) then '20'
+		 when (g.COLTYPE is not null and g.COLTYPE='AN') then '40'
+	     when (g.COLTYPE is null and f.ECONOMICPURPOSECODE in ('9871','9899','9900')) then '76' 
+		 when (g.COLTYPE is null and f.ECONOMICPURPOSECODE='9874') then '60'
+		 when (g.COLTYPE is null and f.ECONOMICPURPOSECODE='8499') then '35'
+		 --when (g.COLTYPE is null and a.ProductType='C3LU') then '39'
+		 else '80' end as SecurityCode,
+   case when CLStatus_Qualitative='UC' then '0'	
+        when CLStatus_Qualitative='SM' then '1'
+		when CLStatus_Qualitative='SS' then '2'
+		when CLStatus_Qualitative='DF' then '3'
+		when CLStatus_Qualitative='BL' then '4'
+		else 'NA' end as LoanCLStatus,
+   Case when j.C1UserCode='SE' and j.BusServSector='SC' then '11'
+        when j.C1UserCode='SE' and j.BusServSector='TC' then '12'
+		when j.C1UserCode='SE' and j.BusServSector='MC' then '13'
+		when j.C1UserCode='ME' and j.BusServSector='SC' then '21'
+		when j.C1UserCode='ME' and j.BusServSector='TC' then '22'
+		when j.C1UserCode='ME' and j.BusServSector='MC' then '23'
+		when j.C1UserCode='MI' and j.BusServSector='SC' then '31'
+		when j.C1UserCode='MI' and j.BusServSector='TC' then '32'
+		when j.C1UserCode='MI' and j.BusServSector='MC' then '33'
+		when j.C1UserCode='CT' then '43'
+		when j.C1UserCode='LM' then '91'
+		else '99' end as SMECode,
+		RIGHT(k.FI_BranchCode,4) as FIBranchCode, 
+		'1' as ACCount
+
+  FROM 
+    report_ClFinal AS a 
+    INNER JOIN report_cl1_LoanCategory AS b ON a.LoanCategory = b.ID 
+    INNER JOIN report_cl1_LoanCategoryDetails AS c ON a.LoanSubType = c.ID 
+    LEFT JOIN TermLoans AS d ON a.UniqueID = d.UNIQUEID 
+    LEFT JOIN InterestSupense AS e ON a.UniqueID = e.UniqueID 
+	LEFT JOIN [dbo].[TermLoans] AS f ON a.UniqueID=f.UNIQUEID
+	left join (select [LOANUNIQID],[COLTYPE],[COLDESCRIPTION] from [dbo].[CollateralBasicDetails] 
+	           group by LOANUNIQID,[COLTYPE],[COLDESCRIPTION]) as g on a.UniqueID=g.LOANUNIQID
+	left join [dbo].[Static_EconPurposeCode] as h on f.ECONOMICPURPOSECODE=h.[EconPCode]
+	left join [dbo].[ProductDescription] as i on a.ProductType=i.ProductType
+	left join [dbo].[SBSACMaster] as j on a.UniqueID=j.UniqueID
+	left join [dbo].[Static_BB_BranchCode] as k on a.ReportingBranch=k.BranchNumber
+  WHERE 
+      A.ProductType not IN ('C3LA','C3LB','C3LC','C3LD','C3LE','C3LG','C3LH','C3LJ','C3LK','C3LR','C3LS','C3LT','C3LU','C3LV',
+'C3OA','C3OB','C3OC','C3OD','C3OE','C3OG','C3OJ','C3OK','DLN','ECC','FDP','FDU','PAC','PAE','PAF',
+'PAI','PAO','PCC','PS9','IDP', 'LTR','HG','HH','HI','HJ','HK','HL','HM','HN','HO','HP','HQ','HR','HS','HT',
+'HU','HV','HW','HY','HZ','KA','KF','NM', 'NN', 'NO', 'NP')
