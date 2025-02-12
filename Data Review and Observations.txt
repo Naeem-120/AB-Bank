@@ -1,0 +1,44 @@
+Account Master Table:
+
+1. Economic sector Code - Data Source: BGPF, Field: 
+CASE
+	WHEN  a.SCCTP IN ('HA','HC') THEN (CASE WHEN BGCU13 ='' THEN BGPS08 ELSE BGCU13 END )
+	WHEN a.SCCTP IN ('HB') THEN e.BGPM08
+	WHEN a.SCCTP IN ('KA','KB','KC','KD','KE') THEN e.BGEP08
+	WHEN a.SCCTP IN ('KH','KI','KJ','KL') THEN e.BGNP08
+	WHEN a.SCCTP IN ('KH','KI','KJ','KL') THEN e.BGNP08
+	WHEN a.SCCTP IN ('KG') THEN e.BGPE08
+	WHEN a.SCCTP IN ('KF') THEN e.BGFI08
+	END as 	SectorCode,
+
+2. Economic Purpose Code: Data Source B0PF, Field:  B0A300 as EconomicPurposeCode,
+
+3. Customer Segment (LE, ME, SE, CF, CT, MI), data source SCPF, Field: a.SCSAC  as ACSundryAnalysisCode,
+
+4. Identification of Overdraft Account:
+	  LASTCOBBALANCE (SCBAL) < 0 and a.OVERDRAFTAMOUNT (SCODL)<0
+      and ACTYPE in  ('LA','LG','GA', 'CI');
+
+5. OD Account, most of the account contain null or Blank Economic Purpose Code, Need to check in CBS to validate the data.
+6. Sector Code OKay
+
+7. As Economic Purpose code is missing for overdraft, so it is not possible to derived Customer Business Segment i.e. MC/SC/TC. 
+    Econ Purpose code 9021, 9024 & 9030 is to determine the SME Code.
+
+
+Term Deposit Basic Details:
+1. Need to check that Economic Sector Code is available in BUPF or not. Need Equation unit to check.
+2. 
+
+Term Loans:
+1. Need to check that Economic Sector Code is available in BUPF or not. Need Equation unit to check.
+2. Economic Purpose Code: more than 18000 records does not contain Economic Purpose Code at Deal Level. Need to check the same in CBS.
+
+
+
+send it
+
+
+
+
+
