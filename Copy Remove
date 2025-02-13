@@ -1,0 +1,11 @@
+DELETE FROM report_ClFinal1F
+WHERE UniqueID IN (
+    SELECT UniqueID
+    FROM (
+        SELECT 
+            UniqueID, 
+            ROW_NUMBER() OVER (PARTITION BY UniqueID ORDER BY (SELECT NULL)) AS RowNum
+        FROM report_ClFinal1F
+    ) AS Subquery
+    WHERE RowNum > 1
+);
