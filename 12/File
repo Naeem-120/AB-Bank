@@ -1,6 +1,0 @@
-=IIF(Len(Fields!ExpiryDate.Value) = 7, 
-    Right("00" & Mid(Fields!ExpiryDate.Value, 6, 2), 2) & "/" & 
-    Right("00" & Mid(Fields!ExpiryDate.Value, 4, 2), 2) & "/" & 
-    Right("00" & Mid(Fields!ExpiryDate.Value, 2, 2), 2), 
-    Fields!ExpiryDate.Value)
-=Fields!BorrowerName.Value & vbCrLf & Fields!NationalIDNumber.Value
