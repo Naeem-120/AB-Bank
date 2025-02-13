@@ -33,6 +33,13 @@ Term Deposit Basic Details:
 Term Loans:
 1. Need to check that Economic Sector Code is available in BUPF or not. Need Equation unit to check.
 2. Economic Purpose Code: more than 18000 records does not contain Economic Purpose Code at Deal Level. Need to check the same in CBS.
+3. Repayment Frequency
+4. Repayment Start Date
+5. Outstanding should be including Accred Interest
+6. Required Provision for Classified Loan if fully covereded by Collateral Security 15% need to check
+7. Some of the term loan disbursment amount returning blank value...need to check
+8. Rescheduled loan flag,
+9. 
 
 
 
