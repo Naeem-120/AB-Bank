@@ -1,0 +1,166 @@
+
+
+WITH FirstRepayment AS (
+
+    SELECT 
+
+        IZBRNM, IZDLP, IZDLR, IZDTES AS FirstRepayDate, IZCRAN AS FirstRepayAmount,
+
+        ROW_NUMBER() OVER (PARTITION BY IZBRNM, IZDLP, IZDLR ORDER BY IZDTES ASC) AS rn
+
+    FROM KFILPMO.IZPF
+
+),
+
+LatestSchedule AS (
+
+    SELECT 
+
+        IZBRNM, IZDLP, IZDLR, IZDTES,
+
+        CASE 
+
+            WHEN LEFT(IZRFRQ,1) = 'V' THEN '1'
+
+            WHEN LEFT(IZRFRQ,1) IN ('M', 'N', 'O', 'P', 'Q' ,'R') THEN '2'
+
+            WHEN LEFT(IZRFRQ,1) IN ('S', 'T', 'U') THEN '3'
+
+            WHEN LEFT(IZRFRQ,1) IN ('A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L') THEN '4'
+
+            ELSE '5' 
+
+        END AS FrequencyCode,
+
+        ROW_NUMBER() OVER (PARTITION BY IZBRNM, IZDLP, IZDLR ORDER BY IZDTES DESC) AS rn
+
+    FROM KFILPMO.IZPF
+
+)
+
+
+SELECT 
+
+    (A.V5BRNM || A.V5DLP || A.V5DLR) AS UniqueID, 
+
+    A.V5BRNM AS DealBranch, 
+
+    A.V5DLP AS DealType, 
+
+    A.V5DLR AS DealRefNo, 
+
+    (A.V5ABD || A.V5AND || A.V5ASD) AS ACUniqueID, 
+
+    A.V5ABD AS DealACBranch, 
+
+    A.V5AND AS DealCustomerID, 
+
+    A.V5ASD AS DealACSuffix, 
+
+    A.V5ACT AS DealACType, 
+
+    A.V5CCY AS DealCCY, 
+
+    C.OTDLA2 AS OriginalDealAmount, 
+
+    C.OTSDTE AS DealStartDate, 
+
+    A.V5MDT AS DealMaturityDate, 
+
+    A.V5IFQ AS InterestFrequency, 
+
+    A.V5LCD AS LastInttCycleDate, 
+
+    A.V5NCD AS NextInttCycleDate, 
+
+    A.V5AM1 AS AccruedInterest, 
+
+    A.V5AM2 AS CurrentCycleInterest, 
+
+    A.V5AM4 AS TotalInttPosted, 
+
+    A.V5IM1 AS ForcastedInttCurrentMonth, 
+
+    A.V5IM2 AS CurrentMonthToDateIntt, 
+
+    A.V5AIM AS InttAdjustmentAmount, 
+
+    A.V5IMS AS TotalCalculatedInttFmStarttoTodate, 
+
+    A.V5BRR AS BaseRateCode, 
+
+    A.V5DRR AS DifferentialCode, 
+
+    A.V5RAT AS CurrentActualRate, 
+
+    A.V5RTM AS CurrentMargin, 
+
+    A.V5SPR AS SpreadRate, 
+
+    A.V5APR AS AnnualCalcRate, 
+
+    A.V5APRR AS CurrentEffectiveRate, 
+
+    A.V5SBAL AS CurrentScheduleBalance, 
+
+    A.V5BAL AS CurrentOutBalance, 
+
+    B.BUDL01 AS EconomicPurposeCode, 
+
+    D.T4PDAT AS REFERENCEDATE,
+
+    
+
+    -- New Fields from FirstRepayment & LatestSchedule
+
+    f.FirstRepayDate,
+
+    f.FirstRepayAmount,
+
+    l.FrequencyCode
+
+
+FROM KFILPMO.V5PF AS A 
+
+LEFT JOIN KFILPMO.BUPF AS B 
+
+    ON A.V5BRNM = B.BUBRNM 
+
+    AND A.V5DLP = B.BUDLP 
+
+    AND A.V5DLR = B.BUDLR 
+
+LEFT JOIN KFILPMO.OTPF AS C 
+
+    ON A.V5BRNM = C.OTBRNM 
+
+    AND A.V5DLP = C.OTDLP 
+
+    AND A.V5DLR = C.OTDLR 
+
+LEFT JOIN KFILPMO.T4PF AS D 
+
+    ON 1 = 1 
+
+LEFT JOIN KFILLIV.IZPF AS b 
+
+    ON A.V5BRNM = b.IZBRNM 
+
+    AND A.V5DLP = b.IZDLP 
+
+    AND A.V5DLR = b.IZDLR
+
+LEFT JOIN FirstRepayment f 
+
+    ON b.IZBRNM = f.IZBRNM AND b.IZDLP = f.IZDLP AND b.IZDLR = f.IZDLR AND f.rn = 1
+
+LEFT JOIN LatestSchedule l 
+
+    ON b.IZBRNM = l.IZBRNM AND b.IZDLP = l.IZDLP AND b.IZDLR = l.IZDLR AND l.rn = 1
+
+
+WHERE V5ARC = '' 
+
+  AND V5TDT = 'L';
+
+
