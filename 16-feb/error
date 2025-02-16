@@ -1,0 +1,14 @@
+TITLE: Microsoft Visual Studio
+------------------------------
+
+Exception from HRESULT: 0xC0202009
+Error at Data Flow Task [OLE DB Source EQ [101]]: SSIS Error Code DTS_E_OLEDBERROR.  An OLE DB error has occurred. Error code: 0x80040E14.
+An OLE DB record is available.  Source: "Microsoft DB2 OLE DB Provider"  Hresult: 0x80040E14  Description: "Token *N was not valid. Valid tokens: ?<END-OF-STATEMENT>. SQLSTATE: 42601, SQLCODE: -104".
+
+
+
+------------------------------
+BUTTONS:
+
+OK
+------------------------------
