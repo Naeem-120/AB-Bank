@@ -1,0 +1,154 @@
+SELECT (A.V5BRNM||A.V5DLP||A.V5DLR) as UniqueID, A.V5BRNM as DealBranch, A.V5DLP as DealType, A.V5DLR as DealRefNo, 
+
+(A.V5ABD||A.V5AND||A.V5ASD) as ACUniqueID, A.V5ABD as DealACBranch, A.V5AND as DealCustomerID, A.V5ASD as DealACSuffix, 
+
+A.V5ACT as DealACType, A.V5CCY as DealCCY, C.OTDLA2 as OriginalDealAmount, C.OTSDTE as DealStartDate, A.V5MDT as DealMaturityDate, 
+
+A.V5IFQ as InterestFrequency, A.V5LCD as LastInttCycleDate, A.V5NCD as NextInttCycleDate, A.V5AM1 as AccruedInterest, 
+
+A.V5AM2  as CurrentCycleInterest, A.V5AM4 as TotalInttPosted, A.V5IM1 as ForcastedInttCurrentMonth, A.V5IM2  as CurrentMonthToDateIntt, 
+
+A.V5AIM as InttAdjustmentAmount, A.V5IMS  as TotalCalculatedInttFmStarttoTodate, A.V5BRR as BaseRateCode, A.V5DRR as DifferentialCode, 
+
+A.V5RAT as CurrentActualRate, A.V5RTM as CurrentMargin, A.V5SPR as SpreadRate,
+
+A.V5APR as AnnualCalcRate, A.V5APRR  as CurrentEffectiveRate, A.V5SBAL as CurrentScheduleBalance, 
+
+A.V5BAL as CurrentOutBalance,
+B.BUDL01 as EconomicPurposeCode,
+
+
+D.T4PDAT AS REFERENCEDATE
+
+FROM   KFILPMO.V5PF AS A 
+	   LEFT JOIN KFILPMO.BUPF AS B ON A.V5BRNM=B.BUBRNM AND A.V5DLP=B.BUDLP AND A.V5DLR=B.BUDLR
+
+      LEFT JOIN KFILPMO.OTPF AS C ON  A.V5BRNM=C.OTBRNM AND A.V5DLP=C.OTDLP AND A.V5DLR=C.OTDLR
+	   LEFT JOIN KFILPMO.T4PF AS D ON 1=1
+      WHERE V5ARC='' AND V5TDT='L'
+	  
+	  
+	  
+	  ++++++++++++++++++++++++++++++++++++++++++++++++++++++
+	  
+	  SELECT 
+  termloan.UNIQUEID, 
+  termloan.DEALBRANCH, 
+  termloan.DEALTYPE, 
+  termloan.DEALREFNO, 
+  termloan.ACUNIQUEID, 
+  termloan.DEALACBRANCH, 
+  termloan.DEALCUSTOMERID, 
+  termloan.UNIQUEID as LoanIDNumber, 
+  termloan.DEALACSUFFIX, 
+  termloan.DEALACTYPE, 
+  termloan.DEALCCY, 
+  termloan.DEALSTARTDATE, 
+  termloan.DEALMATURITYDATE, 
+  ABS(termloan.ACCRUEDINTEREST) / 100 as ACCRUEDINTEREST, 
+  ABS(termloan.CURRENTCYCLEINTEREST) / 100 as CURRENTCYCLEINTEREST, 
+  ABS(termloan.TOTALINTTPOSTED) / 100 as TOTALINTTPOSTED, 
+  ABS(termloan.CURRENTMONTHTODATEINTT) / 100 as CURRENTMONTHTODATEINTT, 
+  ABS(termloan.INTTADJUSTMENTAMOUNT) / 100 as INTTADJUSTMENTAMOUNT, 
+  ABS(termloan.CURRENTSCHEDULEBALANCE) / 100 as CURRENTSCHEDULEBALANCE, 
+  ABS(
+    (termloan.CURRENTOUTBALANCE / 100) 
+    - (termloan.CURRENTMONTHTODATEINTT / 100) 
+    + (termloan.ACCRUEDINTEREST / 100)
+  ) as CURRENTOUTBALANCE, 
+  --termloan.SANDTL, 
+  abs(termloan.SANCTIONAMOUNT/100) as SANCTIONAMOUNT, 
+  --termloan.LIMITAMOUNT as LIMITAMOUNT, 
+  --termloan.INSTALLMENTFREQUENCY, 
+  --termloan.INSTALLMENTSIZE as InstallSizeM, 
+  --termloan.FIRSTREPAYMENTDATE as FIRSTREPAYMENTDATE, 
+  termloan.EXPIRYDATE, 
+  termloan.DISBURSMENTDATE, 
+  termloan.DISBURSEMENTAMOUNT as DISBURSEMENTAMOUNT, 
+  --termloan.PRIMARYSECURITYAMOUNT, 
+  termloan.COLLATERALSECVALUE as COLLATERALSECVALUE, 
+  termloan.RESCHEDULENO, 
+  termloan.RESCHEDULAMT, 
+  termloan.RESCHEDULEDT, 
+  termloan.ECONOMICPURPOSECODE, 
+  termloan.SECOTORCODE, 
+  termloan.REFERENCEDATE, 
+  ABS(termoverdue.InstallmentAmountDue) / 100 as InstallmentAmountDue, 
+  ABS(termoverdue.InstallmentAmountPaid) / 100 as InstallmentAmountPaid, 
+  ABS(termoverdue.InstallmentAmountOverdue) / 100 as InstallmentAmountOverdue, 
+  ABS(termoverdue.InstallmentSize) / 100 as InstallmentSize, 
+  ISNULL(termoverdue.NosOfOVDInstallment, 0) as NosOfOVDInstallment, 
+  TRIM(ISNULL(termoverdue.CL_STS_Qualitative, '')) as CL_STS_Qualitative, 
+  TRIM(ISNULL(termoverdue.CL_STS_objective, '')) as CL_STS_objective, 
+  customer.CustomerName, 
+  customer.CustSubType, 
+  customer.Gender, 
+  customer.NationalIDNumber, 
+  branchdtls.BranchNumber, 
+  branchdtls.BranchName, 
+  branchdtls.BranchSubBranch, 
+  termloan.DEALACBRANCH as ReportingBranch, 
+  branchdtls.UrbanRural, 
+  COALESCE(CAST(coldtls.AssignedAmount / 100 AS DECIMAL(21, 2)), 0.00) as AssignedAmount, 
+  COALESCE(CAST(coldtls.CollateralValue / 100 AS DECIMAL(21, 2)), 0.00) as CollateralValue, 
+  COALESCE(CAST(coldtls.ColBankValue / 100 AS DECIMAL(21, 2)), 0.00) as ColBankValue, 
+  customer.CustomerType, 
+  AccountMaster.ACSUNDRYANALYSISCODE as SundryAnalysisCode,
+  AccountMaster.C3USERCODE, 
+  DType.DealTypeDescription, 
+  CAST(
+    CASE 
+      WHEN termoverdue.InstallmentSize = 0 OR termoverdue.InstallmentSize IS NULL THEN NULL 
+      ELSE termoverdue.InstallmentAmountDue / termoverdue.InstallmentSize 
+    END AS DECIMAL(18, 2)
+  ) as InstDuePeriod,
+ case when termoverdue.CL_STS_objective ='00' then 'UC'
+		when termoverdue.CL_STS_objective ='01' then 'SM'
+		when termoverdue.CL_STS_objective ='SS' then 'SS'
+		when termoverdue.CL_STS_objective ='DF' then 'DF'
+		when termoverdue.CL_STS_objective ='BL' then 'BL'
+		else ''
+		end as CLStatus_OJ,
+		
+  case 	when termoverdue.CL_STS_Qualitative in ('AC', 'SP', 'EA', 'WL') then 'UC'
+		when termoverdue.CL_STS_Qualitative ='SM' then 'SM'
+		when termoverdue.CL_STS_Qualitative ='SQ' then 'SS'
+		when termoverdue.CL_STS_Qualitative ='DQ' then 'DF'
+		when termoverdue.CL_STS_Qualitative ='BQ' then 'BL'
+		else ''
+		end as CLStatus_QJ,	
+ 
+ termoverdue.OverDueDays
+  
+FROM 
+  [TermLoans] AS termloan 
+  LEFT OUTER JOIN mis_TermLoanOverdue AS termoverdue 
+    ON termloan.UNIQUEID = termoverdue.UniqueID 
+  LEFT OUTER JOIN mis_CustomerBasicInfo AS customer 
+    ON termloan.DEALCUSTOMERID = customer.CustomerID 
+  LEFT OUTER JOIN mis_BranchDetails AS branchdtls 
+    ON termloan.DEALACBRANCH = branchdtls.BranchNumber 
+  LEFT OUTER JOIN (
+    SELECT 
+      LOANUNIQID, 
+      SUM(ASSINEDAMOUNT) AS AssignedAmount, 
+      SUM(COLVALUE) AS CollateralValue, 
+      SUM(COLBANKVALUE) AS ColBankValue 
+    FROM 
+      CollateralBasicDetails 
+    GROUP BY 
+      LOANUNIQID
+  ) AS coldtls 
+    ON termloan.UNIQUEID = coldtls.LOANUNIQID 
+  LEFT OUTER JOIN AccountMaster 
+    ON termloan.ACUNIQUEID = AccountMaster.UNIQUE_AC_ID 
+  LEFT OUTER JOIN [dbo].[mis_DealTypes] AS DType 
+    ON termloan.DEALTYPE = DType.DealType;
+	
+	
+	
+	
+	
+	Nayeem.....
+	send this file
+	ok sir
