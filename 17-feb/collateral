@@ -1,0 +1,125 @@
+select 
+
+(HXAB||HXAN||HXAS) as LOANUNIQID,
+
+(HXCDBN||HXCDLP||HXCDLR) as COLITEMREF,
+
+A.HXAAMT as ASSINEDAMOUNT,            
+
+B.HYCCY  as COLCCY,          
+
+B.HYCLV  as COLVALUE,             
+
+B.HYBKV  as COLBANKVALUE,                   
+
+C.HWCLP  as COLTYPE,                  
+
+C.HWCPD  as COLDESCRIPTION      
+
+
+
+from KFILPMO.HXPF as A 
+
+inner join  KFILPMO.HYPF as B on (A.HXCDLP=B.HYDLP and A.HXCDLR=B.HYDLR and A.HXCDBN=B.HYDBNM)
+
+inner join  KFILPMO.HWPF as C on B.HYCLP=C.HWCLP
+
+where A.HXAB<>' ' and A.HXCDLP<>' '
+
+
+
+union all
+
+
+
+select 
+
+(HXAB||HXAN||HXAS) as ColUniqID,
+
+HXCLR as COLITEMREF,
+
+A.HXAAMT as ASSINEDAMOUNT,            
+
+B.HYCCY  as COLCCY,          
+
+B.HYCLV  as COLVALUE,             
+
+B.HYBKV  as COLBANKVALUE,                   
+
+C.HWCLP  as COLTYPE,                  
+
+C.HWCPD  as COLDESCRIPTION 
+
+
+
+from  KFILPMO.HXPF as A 
+
+inner join  KFILPMO.HYPF as B on A.HXCLR=B.HYCLR 
+
+inner join  KFILPMO.HWPF as C on B.HYCLP=C.HWCLP
+
+where A.HXCLR<>' ' and (HXAB||HXAN||HXAS)<>' '
+
+
+
+union all
+
+          
+
+SELECT (HXDBNM||HXDLP||HXDLR) as LOANUNIQID,    
+
+HXCLR as COLITEMREF,                       
+
+A.HXAAMT as ASSINEDAMOUNT,            
+
+B.HYCCY  as COLCCY,          
+
+B.HYCLV  as COLVALUE,             
+
+B.HYBKV  as COLBANKVALUE,                   
+
+C.HWCLP  as COLTYPE,                  
+
+C.HWCPD  as COLDESCRIPTION  
+
+
+
+from  KFILPMO.HXPF as A 
+
+inner join  KFILPMO.HYPF as B on A.HXCLR=B.HYCLR 
+
+inner join  KFILPMO.HWPF as C on B.HYCLP=C.HWCLP
+
+where A.HXCLR<>' ' and (HXDBNM||HXDLP||HXDLR)<>' '
+
+
+
+UNION ALL
+
+                       
+
+SELECT (HXDBNM||HXDLP||HXDLR) AS LOANUNIQID,       
+
+(HXCDBN||HXCDLP||HXCDLR) AS COLITEMREF,      
+
+A.HXAAMT as ASSINEDAMOUNT,            
+
+B.HYCCY  as COLCCY,          
+
+B.HYCLV  as COLVALUE,             
+
+B.HYBKV  as COLBANKVALUE,                   
+
+C.HWCLP  as COLTYPE,                  
+
+C.HWCPD  as COLDESCRIPTION 
+
+
+
+from  KFILPMO.HXPF as A 
+
+inner join  KFILPMO.HYPF as B on (A.HXCDLP=B.HYDLP and A.HXCDLR=B.HYDLR and A.HXCDBN=B.HYDBNM)
+
+inner join  KFILPMO.HWPF as C on B.HYCLP=C.HWCLP
+
+where A.HXDLP<>' ' and (HXCDBN||HXCDLP||HXCDLR)<>' '
