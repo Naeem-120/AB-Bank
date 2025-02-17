@@ -1,0 +1,62 @@
+SELECT  
+    (COALESCE(HXAB, '') || COALESCE(HXAN, '') || COALESCE(HXAS, '')) AS LOANUNIQID,
+
+    CASE 
+        WHEN HXCDBN <> '' AND HXCDLP <> '' AND TRIM(HXCDLR) <> '' 
+             THEN HXCDBN || HXCDLP || HXCDLR 
+        WHEN TRIM(HXCLR) <> '' 
+             THEN HXCLR 
+    END AS COLITEMREF,
+
+    A.HXAAMT AS ASSINEDAMOUNT,           
+
+    B.HYCCY AS COLCCY,          
+
+    B.HYCLV AS COLVALUE,             
+
+    B.HYBKV AS COLBANKVALUE,                   
+
+    C.HWCLP AS COLTYPE,                  
+
+    C.HWCPD AS COLDESCRIPTION      
+
+FROM KFILPMO.HXPF A 
+INNER JOIN KFILPMO.HYPF B 
+    ON A.HXCDLP = B.HYDLP 
+    AND A.HXCDLR = B.HYDLR 
+    AND A.HXCDBN = B.HYDBNM
+INNER JOIN KFILPMO.HWPF C 
+    ON B.HYCLP = C.HWCLP
+
+WHERE TRIM(A.HXAB) <> '' 
+  AND A.HXAAMT <> 0
+  
+union all 
+  
+SELECT 
+    (HXDBNM || HXDLP || HXDLR) AS LOANUNIQID,    
+
+    CASE 
+        WHEN HXCLR <> ' ' THEN HXCLR
+        WHEN HXCDBN <> '' AND HXCDLP <> '' AND HXCDLR <> '' 
+            THEN HXCDBN || HXCDLP || HXCDLR
+    END AS COLITEMREF,                       
+
+    A.HXAAMT AS ASSINEDAMOUNT,            
+    B.HYCCY  AS COLCCY,          
+    B.HYCLV  AS COLVALUE,             
+    B.HYBKV  AS COLBANKVALUE,                   
+    C.HWCLP  AS COLTYPE,                  
+    C.HWCPD  AS COLDESCRIPTION   
+
+FROM KFILPMO.HXPF A 
+
+INNER JOIN KFILPMO.HYPF B 
+    ON A.HXCLR = B.HYCLR 
+
+INNER JOIN KFILPMO.HWPF C 
+    ON B.HYCLP = C.HWCLP
+
+WHERE 
+    (HXDBNM || HXDLP || HXDLR) <> ' '
+    AND HXAAMT <> 0;
