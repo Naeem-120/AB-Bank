@@ -1,0 +1,88 @@
+SELECT 
+    a.UniqueID, 
+    b.CategoryName, 
+    c.CategoryDetails, 
+    a.ProductType, 
+    a.ACBranch, 
+    a.ReportingBranch, 
+    a.BranchName, 
+    a.CustomerID, 
+    a.BorrowerName, 
+    a.LoanIDNumber, 
+    a.Currency, 
+    a.NatureofLoans, 
+    f.SECTORCODE AS EconSectCode,
+    f.ECONOMICPURPOSECODE AS EconPurposeCode,
+    h.[EconPDescription],
+    a.SanctionedLimit, 
+    a.LastSanctionDate,
+    a.ExpiryDate, 
+    a.CLStatus_Objective, 
+    a.CLStatus_Qualitative, 
+    a.OutstandingBalance, 
+    a.PeriodArrears, 
+    a.InstllmentAmount, 
+    COALESCE(a.InstallmentFrequency, 0) AS InstallmentFrequency, 
+    a.TotalInstlAmountPaid, 
+    a.TimeEqvInstlPaid, 
+    COALESCE(d.DRINTERESTRATE, 0.00) AS InterestRate, 
+    COALESCE(ABS(CAST((d.DRINTERESTACCRUED / 100) AS DECIMAL(18, 2))), 0.00) AS AccruedInterest, 
+    COALESCE(e.SUSPRVQ, 0.00) AS LastQuarterInttSuspense, 
+    a.Sus_Total AS CurrentQuarterInttSuspense, 
+    ABS(CAST(a.CollateralSecAmount AS DECIMAL(18, 2))) AS ElligibleSecurityValue, 
+    g.COLTYPE AS ColType,
+    g.COLDESCRIPTION AS ColTypeDescription,
+    COALESCE(e.PROVREQ, 0.00) AS LastQuarterProvRequired, 
+    a.RequiredProvAmount, 
+    a.RNL_RSDL_Amount AS RescheduledAmount, 
+    a.NosRNL_RSDL AS NosTimes_Reschedulement, 
+    COALESCE(a.RNL_RSDL_Date, 0) AS ReschedulementDate,
+    m.BBProdCode AS BBProdCode,
+    CASE 
+        WHEN g.COLTYPE IS NOT NULL THEN o.SecurityCode 
+        WHEN g.COLTYPE IS NULL AND f.ECONOMICPURPOSECODE IN ('9871', '9899', '9900') THEN '76' 
+        WHEN g.COLTYPE IS NULL AND f.ECONOMICPURPOSECODE = '9874' THEN '60'
+        WHEN g.COLTYPE IS NULL AND f.ECONOMICPURPOSECODE = '8499' THEN '35'
+        ELSE '80' 
+    END AS SecurityCode,
+    CASE 
+        WHEN CLStatus_Qualitative = 'UC' THEN '0'    
+        WHEN CLStatus_Qualitative = 'SM' THEN '1'
+        WHEN CLStatus_Qualitative = 'SS' THEN '2'
+        WHEN CLStatus_Qualitative = 'DF' THEN '3'
+        WHEN CLStatus_Qualitative = 'BL' THEN '4'
+        ELSE 'NA' 
+    END AS LoanCLStatus,
+    CASE 
+        WHEN f.ACSUNDRYANALYSISCODE = 'SE' AND f.ECONOMICPURPOSECODE = '9024' THEN '11' 
+        WHEN f.ACSUNDRYANALYSISCODE = 'SE' AND f.ECONOMICPURPOSECODE = '9030' THEN '12'
+        WHEN f.ACSUNDRYANALYSISCODE = 'SE' AND f.ECONOMICPURPOSECODE = '9021' THEN '13'
+        WHEN f.ACSUNDRYANALYSISCODE = 'ME' AND f.ECONOMICPURPOSECODE = '9024' THEN '21'
+        WHEN f.ACSUNDRYANALYSISCODE = 'ME' AND f.ECONOMICPURPOSECODE = '9030' THEN '22'
+        WHEN f.ACSUNDRYANALYSISCODE = 'ME' AND f.ECONOMICPURPOSECODE = '9021' THEN '23'
+        WHEN f.ACSUNDRYANALYSISCODE = 'MI' AND f.ECONOMICPURPOSECODE = '9024' THEN '31'
+        WHEN f.ACSUNDRYANALYSISCODE = 'MI' AND f.ECONOMICPURPOSECODE = '9030' THEN '32'
+        WHEN f.ACSUNDRYANALYSISCODE = 'MI' AND f.ECONOMICPURPOSECODE = '9021' THEN '33'
+        WHEN f.ACSUNDRYANALYSISCODE = 'CT' THEN '43'
+        WHEN f.ACSUNDRYANALYSISCODE = 'LE' THEN '91'
+        ELSE '99' 
+    END AS SMECode,
+    RIGHT(k.FI_BranchCode, 4) AS FIBranchCode, 
+    '1' AS ACCount
+FROM report_ClFinal AS a
+INNER JOIN report_cl1_LoanCategory AS b ON a.LoanCategory = b.ID 
+INNER JOIN report_cl1_LoanCategoryDetails AS c ON a.LoanSubType = c.ID 
+LEFT JOIN dbo.AccountInterestRate AS d ON a.UniqueID = d.UNIQUEACID 
+LEFT JOIN InterestSupense AS e ON a.LoanIDNumber = e.UniqueID 
+LEFT JOIN dbo.AccountMaster AS f ON a.UniqueID = f.UNIQUE_AC_ID
+LEFT JOIN (
+    SELECT LOANUNIQID, COLTYPE, COLDESCRIPTION 
+    FROM dbo.CollateralBasicDetails 
+    GROUP BY LOANUNIQID, COLTYPE, COLDESCRIPTION
+) AS g ON a.UniqueID = g.LOANUNIQID
+LEFT JOIN dbo.Static_EconPurposeCode AS h ON f.ECONOMICPURPOSECODE = h.EconPCode
+LEFT JOIN dbo.ProductDescription AS i ON a.ProductType = i.ProductType
+LEFT JOIN dbo.Static_BB_BranchCode AS k ON a.ReportingBranch = k.BranchNumber
+LEFT JOIN dbo.static_ProductCode AS m ON a.ProductType = m.ProductType
+LEFT JOIN dbo.static_SecurityCode AS o ON g.COLTYPE = o.COLTYPE
+WHERE SanctionedLimit <> 0 AND a.ProductType IN ('LA', 'LG', 'GA', 'CI')
