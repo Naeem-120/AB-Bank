@@ -1,0 +1,4 @@
+
+
+CASE WHEN REPAYMENT_AMT <>0 THEN ABS(COALESCE(CAST(REPAYMENT_AMT/100 AS DECIMAL (18,2)),0.00))
+       ELSE ABS(cast(termoverdue.InstallmentSize/100 as decimal(18,2))) END as InstallmentSize,
