@@ -1,0 +1,168 @@
+SELECT 
+    a.UniqueID AS UniqueID,
+    a.CustomerID,
+    'D' AS RecordType,
+    '041' AS FICode,
+    RIGHT('0000' + CAST(b.FI_BranchCode AS VARCHAR), 4) AS FIBranchCode, -- ✅ Ensures 4-digit branch code
+
+    CASE 
+        WHEN c.BorrowerCIBCode IS NULL THEN '0000000000000000' 
+        ELSE RIGHT('0000000000000000' + CAST(c.BorrowerCIBCode AS VARCHAR), 16) 
+    END AS BorrowerCIBCode,
+
+    CASE 
+        WHEN c.FI_SubjectCode IS NULL THEN '0000000000000000'
+        ELSE RIGHT('0000000000000000' + CAST(c.FI_SubjectCode AS VARCHAR), 16) 
+    END AS FI_SubjectCode, -- ✅ Ensures 16-digit FI_SubjectCode
+
+    a.UniqueID AS FIContractCode, 
+    d.ContractType AS ContractType,
+    'LV' AS ContractPhase,
+
+    CASE 
+        WHEN a.FinalClassificationsts = 'UC' THEN ''
+        WHEN a.FinalClassificationsts = 'SM' THEN 'M'
+        WHEN a.FinalClassificationsts = 'SS' THEN 'S'
+        WHEN a.FinalClassificationsts = 'DF' THEN 'D'
+        WHEN a.FinalClassificationsts = 'BL' THEN 'B'
+        ELSE 'W' 
+    END AS ContractStatus,
+
+    'BDT' AS CurrencyCode,
+ISNULL(
+    RIGHT(a.LastSanctionDate, 2) + 
+    RIGHT(LEFT(a.LastSanctionDate, 5), 2) + 
+    CAST((LEFT(a.LastSanctionDate, 1) * 100 + CAST(SUBSTRING(a.LastSanctionDate, 2, 2) AS INT)) AS VARCHAR), 
+'00000000') AS StartingDate,
+
+ISNULL(
+    RIGHT(a.LastSanctionDate, 2) + 
+    RIGHT(LEFT(a.LastSanctionDate, 5), 2) + 
+    CAST((LEFT(a.LastSanctionDate, 1) * 100 + CAST(SUBSTRING(a.LastSanctionDate, 2, 2) AS INT)) AS VARCHAR), 
+'00000000') AS RequestDate,
+
+ISNULL(
+    RIGHT(a.ExpiryDate, 2) + 
+    RIGHT(LEFT(a.ExpiryDate, 5), 2) + 
+    CAST((LEFT(a.ExpiryDate, 1) * 100 + CAST(SUBSTRING(a.ExpiryDate, 2, 2) AS INT)) AS VARCHAR), 
+'00000000') AS PlannedEndDate,
+    '00000000' AS ActualEndDate,
+
+    CASE 
+        WHEN a.FinalClassificationsts IN ('UC', 'SM') THEN 'N' 
+        ELSE 'Y' 
+    END AS DefaultStatus,
+ISNULL(
+    RIGHT(e.LastPayDate, 2) + 
+    RIGHT(LEFT(e.LastPayDate, 5), 2) + 
+    CAST((LEFT(e.LastPayDate, 1) * 100 + CAST(SUBSTRING(e.LastPayDate, 2, 2) AS INT)) AS VARCHAR), 
+'00000000') AS DateofLastPayment,
+
+    '0' AS FlagSubsidizedCredit,
+    '0' AS FlagPreFinance,
+    '000' AS ThirdPartyGuaranteeType,
+    ISNULL(g.SecurityCode, '000') AS SecurityType, -- ✅ Handles NULL values
+
+    '000000000000' AS AmountGuaranteedTP,
+    '000000000000' AS AmountGuaranteedSec,
+
+    CASE 
+        WHEN a.ClassificationBasis = 'QJ' THEN 'Y'
+        ELSE ' ' 
+    END AS ClassificationBasis,
+
+    -- ✅ Round down and ensure 12-digit format
+    RIGHT('000000000000' + CAST(FLOOR(a.SanctionedLimit) AS VARCHAR), 12) AS SanctionLimit,
+    RIGHT('000000000000' + CAST(FLOOR(a.DisbursedAmount) AS VARCHAR), 12) AS TotalDisbursedAmount,
+    RIGHT('000000000000' + CAST(FLOOR(a.OutstandingBalance) AS VARCHAR), 12) AS TotalOutstandingAmount,
+
+    '120' AS TotalNumberofInstallments,
+    'M' AS PeriodicityofPayment, 
+    'OTH' AS MethodofPayment,
+
+    -- ✅ Round down and ensure 12-digit format
+    RIGHT('000000000000' + CAST(FLOOR(a.InstllmentAmount) AS VARCHAR), 12) AS InstallmentAmount,
+    '00000000' AS NextInstallmentDate,
+    RIGHT('000000000000' + CAST(FLOOR(a.InstllmentAmount) AS VARCHAR), 12) AS UpcomingInstlments,
+    '000' AS NosofRemainingInstallment,
+    RIGHT('000000000000' + CAST(FLOOR(a.OutstandingBalance) AS VARCHAR), 12) AS RemainingInstlAmount,
+
+    -- ✅ Ensures 3-digit format for overdue installments
+    RIGHT('000' + CAST(
+        CASE 
+            WHEN e.NosOfOVDInstallment IS NULL OR e.NosOfOVDInstallment = 0.00 THEN 0 
+            ELSE FLOOR(e.NosOfOVDInstallment)  
+        END AS VARCHAR), 3) AS NosOvdInstallments,
+		
+    -- ✅ Round down and ensure 12-digit format
+   RIGHT('000000000000' + CAST(
+    FLOOR(
+        (COALESCE(ABS(e.InstallmentAmountDue), 0) - COALESCE(ABS(e.InstallmentAmountPaid), 0)) / 100
+    ) AS VARCHAR), 12) AS OverdueAmount,
+ 
+     
+	RIGHT('000' + CAST( case when e.OverdueDays is null or e.OverdueDays<29 then '000'
+	      when e.OverdueDays>29  and e.OverdueDays<=59  then '030'
+          when e.OverdueDays>59  and e.OverdueDays<=89  then '060'
+		  when e.OverdueDays>89  and e.OverdueDays<=119  then '090'
+		  when e.OverdueDays>119  and e.OverdueDays<=149  then '120'
+		  when e.OverdueDays>149  and e.OverdueDays<=179  then '150'
+		  when e.OverdueDays>179  and e.OverdueDays<=209  then '180'
+		  else 180 end as varchar),3) as DaysofPaymentDelay,
+       ' ' as TypeofLeasedGood,
+	   '000000000000' as ValueofLeasedGood,
+	  ---VehicleRegNumber (40 Charachter)
+	  -- DateofManufacturing (8 characjer date format)
+     
+	 RIGHT('000000000000' + CAST( CASE 
+        WHEN e.InstallmentAmountDue IS NULL 
+            OR e.InstallmentAmountPaid IS NULL 
+            OR (abs(e.InstallmentAmountDue) - abs(e.InstallmentAmountPaid)) <= 0.00 
+        THEN 0 
+        ELSE FLOOR(abs(e.InstallmentAmountDue) - abs(e.InstallmentAmountPaid)/100)  
+    END AS VARCHAR), 12) AS DueforRecovery,
+	 
+   RIGHT('000000000000' + CAST( CASE 
+        WHEN e.InstallmentAmountPaid IS NULL 
+            OR e.InstallmentAmountPaid = 0.00 THEN 0 
+        ELSE FLOOR(abs(e.InstallmentAmountPaid)/100)  
+             END AS VARCHAR), 12) AS RecoveryDuringPeriod, --- Formula to change considering OMDTE Date
+	RIGHT('000000000000' + CAST( CASE 
+        WHEN e.InstallmentAmountPaid IS NULL 
+            OR e.InstallmentAmountPaid = 0.00 THEN 0 
+        ELSE FLOOR(abs(e.InstallmentAmountPaid)/100)  
+             END AS VARCHAR), 12) AS CumulativeRecovery, 
+      '00000000' as DateofLawsuit,
+	  '00000000' as DateofClassification,
+	  case when a.NosRNL_RSDL is null then '00000000'
+	  else a.NosRNL_RSDL end as TimesofRescheduling,
+ISNULL(
+    RIGHT(a.RNL_RSDL_Date, 2) + 
+    RIGHT(LEFT(a.RNL_RSDL_Date, 5), 2) + 
+    CAST((LEFT(a.RNL_RSDL_Date, 1) * 100 + CAST(SUBSTRING(a.RNL_RSDL_Date, 2, 2) AS INT)) AS VARCHAR), 
+'00000000') AS DateofRescheduling,
+
+      case when h.ECONOMICPURPOSECODE is null or h.ECONOMICPURPOSECODE='' then '0000'
+	   else h.ECONOMICPURPOSECODE end as EconomicPurposeCode,
+      case when i.ACANALYSISCODE='SE' then 'Y' 
+	       else '' end as SME,
+      '22' as EnterpriseType
+    -- Filler2
+
+FROM report_ClFinal1F AS a
+LEFT JOIN Static_BB_BranchCode AS b 
+    ON a.ReportingBranch = b.BranchNumber 
+LEFT JOIN mis_AdditionalCustInfo AS c 
+    ON a.CustomerID = c.CustomerID 
+LEFT JOIN static_ProductCode AS d 
+    ON a.ProductType = d.ProductType 
+LEFT JOIN mis_TermLoanOverdue AS e 
+    ON a.UniqueID = e.UniqueID 
+LEFT JOIN CollateralBasicDetails AS f 
+    ON a.UniqueID = f.LOANUNIQID 
+LEFT JOIN static_SecurityCode AS g 
+    ON f.COLTYPE = g.COLTYPE
+LEFT JOIN TermLoans AS h
+    ON a.UniqueID=h.UNIQUEID LEFT JOIN 
+	AccountMaster as i ON h.ACUNIQUEID=i.UNIQUE_AC_ID
+WHERE LoanCategory = '3';
