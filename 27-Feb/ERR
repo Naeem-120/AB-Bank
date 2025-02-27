@@ -1,0 +1,16 @@
+SELECT 
+
+        H1BRNM || H1LNP || H1DLR AS DEALUNQID
+,   CASE WHEN H1MAN='Y' THEN MAX(H1LSC)
+
+                      END AS CLQlJ,
+
+         CASE WHEN H1MAN='' THEN MAX(H1LSC)
+
+                      END AS CLOBJ
+
+      
+
+      
+
+        GROUP BY H1BRNM, H1LNP, H1DLR
