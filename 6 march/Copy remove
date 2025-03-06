@@ -1,0 +1,10 @@
+WITH CTE AS (
+    SELECT        
+        UniqueID,
+        ROW_NUMBER() OVER (PARTITION BY UniqueID ORDER BY UniqueID) AS RowNum
+    FROM report_ClFinal
+)
+DELETE FROM report_ClFinal
+WHERE UniqueID IN (
+    SELECT UniqueID FROM CTE WHERE RowNum > 1
+);
