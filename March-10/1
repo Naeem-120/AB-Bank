@@ -1,0 +1,8 @@
+Row.PeriodArearsO = 0;
+ // Calculate overdue period
+ if (overdueDays >= 30)
+ {
+     double difference = overdueDays / 30.0;
+     overduePeriod = (int)Math.Floor(difference);
+     Row.PeriodArearsO= (decimal)difference;
+ }
