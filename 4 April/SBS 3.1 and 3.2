@@ -1,0 +1,44 @@
+select 
+a.UniqueID,
+a.ACBranch,
+a.BranchName,
+a.LoanCategory,
+a.LoanSubType,
+a.UC_ST_Amount,
+a.UC_SM_Amount,
+a.CL_SS_amount,
+a.CL_DF_Amount,
+a.CL_BL_Amount,
+case when a.LoanCategory='1' and a.PeriodArrears>0 then a.OutstandingBalance
+     when a.LoanCategory in ('3','3','4') and a.PeriodArrears>0 
+	      then coalesce(abs(cast((d.InstallmentAmountDue-d.InstallmentAmountPaid)/100 as decimal(18,2))),0.00)
+	else 0.00 end as OverdueAmount,
+coalesce(abs(cast((e.AMTDISBURSED/100) as decimal(18,2))),0.00) as DisbursmentAMount,
+--New Limit Sanction during the quarter
+coalesce(abs(cast((e.PRINAMTRECOVERED+e.INTTAMTRECOVERED)/100 as decimal(18,2))),0.00) as AmountRecovered,
+case when b.ECONOMICPURPOSECODE is not null then b.ECONOMICPURPOSECODE
+     when trim(b.ECONOMICPURPOSECODE)<>'' then b.ECONOMICPURPOSECODE
+     when c.ECONOMICPURPOSECODE is not null  then c.ECONOMICPURPOSECODE
+	 when trim(c.ECONOMICPURPOSECODE)<>'' then c.ECONOMICPURPOSECODE
+	 else 'Blank' end as EconPurposeCode,
+	 case when b.ECONOMICPURPOSECODE is not null then f.EconPGroup
+     when c.ECONOMICPURPOSECODE is not null then g.EconPGroup
+	 else 'Blank' end as EconPurposeGroup,
+	 
+case when b.SECOTORCODE is not null then b.SECOTORCODE
+     when c.SECTORCODE is not null then c.SECTORCODE
+	 else 'Blank' end as EconSectorCode,
+case when b.SECOTORCODE is not null then h.EconomicSectorDescription
+     when c.SECTORCODE is not null then i.EconomicSectorDescription
+	 else 'Blank' end as EconomicSectorDescription
+
+from  report_ClFinal as a 
+left join TermLoans as b on a.UniqueID=b.UNIQUEID
+left join AccountMaster as c on a.UniqueID=c.UNIQUE_AC_ID
+left join mis_TermLoanOverdue as d on a.UniqueID=d.UniqueID
+left join TLDisbursedRecovered as e on a.UniqueID=e.UNIQUEID
+left join Static_EconPurposeCode as f on b.ECONOMICPURPOSECODE=f.EconPCode
+left join Static_EconPurposeCode as g on c.ECONOMICPURPOSECODE=g.EconPCode
+left join report_sbs_SSCodeSBS as h on b.SECOTORCODE=h.EconomicSectorCode
+left join report_sbs_SSCodeSBS as i on c.SECTORCODE=i.EconomicSectorCode
+where a.LoanCategory='3' 
