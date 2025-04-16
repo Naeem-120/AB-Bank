@@ -1,0 +1,46 @@
+WITH ValidGroups AS (
+    SELECT 
+        OMBRNM,
+        OMDLP,
+        OMDLR,
+        OMDTE
+    FROM KFILLIV.OMPF
+    GROUP BY OMBRNM, OMDLP, OMDLR, OMDTE
+    HAVING
+        COUNT(CASE WHEN OMMVT = 'I' AND TRIM(OMMVTS) = '' THEN 1 END) > 0
+        AND COUNT(CASE WHEN OMMVT = 'P' AND OMMVTS = 'R' THEN 1 END) > 0
+        AND SUM(CASE WHEN OMMVT IN ('I', 'P') AND OMNWR = 0 THEN 1 ELSE 0 END) = 0
+),
+FilteredData AS (
+    SELECT 
+        t.OMBRNM,
+        t.OMDLP,
+        t.OMDLR,
+        t.OMDTE,
+        t.OMMVT,
+        t.OMMVTS,
+        t.OMNWR,
+        ROW_NUMBER() OVER (PARTITION BY t.OMBRNM, t.OMDLP, t.OMDLR ORDER BY t.OMDTE) AS RN
+    FROM KFILLIV.OMPF t
+    INNER JOIN ValidGroups v
+        ON t.OMBRNM = v.OMBRNM
+        AND t.OMDLP = v.OMDLP
+        AND t.OMDLR = v.OMDLR
+        AND t.OMDTE = v.OMDTE
+    WHERE t.OMMVT IN ('I', 'P')
+    AND t.OMBRNM = '0796'
+    AND t.OMARC = ''
+),
+FinalSum AS (
+    SELECT 
+        OMBRNM,
+        OMDLP,
+        OMDLR,
+        SUM(OMNWR) AS TotalOMNWR
+    FROM FilteredData
+    WHERE RN <= 2
+    GROUP BY OMBRNM, OMDLP, OMDLR
+)
+SELECT *
+FROM FinalSum
+ORDER BY OMBRNM, OMDLP, OMDLR;
