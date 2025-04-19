@@ -1,0 +1,31 @@
+FirstRepayData AS (
+    SELECT 
+        IZBRNM, IZDLP, IZDLR, IZNDT AS FirstRepayDate, IZNPY AS RepayPeriod, IZCRAN,
+        ROW_NUMBER() OVER (PARTITION BY IZBRNM, IZDLP, IZDLR ORDER BY IZNDT ASC) AS rn
+    FROM kfilpmo.izpf
+)
+
+SELECT DISTINCT 
+    (a.IZBRNM||a.IZDLP||a.IZDLR) AS UniqueID, 
+    a.IZDTES AS LastSchDate,
+    a.IZCRA  AS InstallmentSize,
+    f.FirstRepayDate,
+    f.RepayPeriod,
+    f.IZCRAN  AS FirstRepayAmount
+FROM kfilpmo.izpf a
+INNER JOIN MaxSchedule m 
+    ON a.IZBRNM = m.IZBRNM 
+    AND a.IZDLP = m.IZDLP 
+    AND a.IZDLR = m.IZDLR 
+    AND a.IZDTES = m.Max_IZDTES
+INNER JOIN FirstRepayData f
+    ON a.IZBRNM = f.IZBRNM 
+    AND a.IZDLP = f.IZDLP 
+    AND a.IZDLR = f.IZDLR
+    AND f.rn = 1
+INNER JOIN kfilpmo.OSPF o 
+    ON a.IZBRNM = o.OSBRNM 
+    AND a.IZDLP = o.OSDLP 
+    AND a.IZDLR = o.OSDLR
+WHERE o.OSAPP = 'RL' 
+  AND o.OSARC = '' 
