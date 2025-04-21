@@ -1,0 +1,42 @@
+string EarliestDateStr = Row.EARLIESTOVDDATE.ToString();
+string SystemDateStr = Row.SYSTEMDATE.ToString();
+
+if (EarliestDateStr != "0" && SystemDateStr != "0")
+{
+    try
+    {
+        // Parse Earliest Date
+        int century1 = int.Parse(EarliestDateStr.Substring(0, 1));
+        int year1 = int.Parse(EarliestDateStr.Substring(1, 2));
+        int month1 = int.Parse(EarliestDateStr.Substring(3, 2));
+        int day1 = int.Parse(EarliestDateStr.Substring(5, 2));
+
+        // Convert to real year
+        int fullYear1 = (century1 - 1) * 100 + 2000 + year1;
+
+        DateTime date1 = new DateTime(fullYear1, month1, day1);
+
+        // Parse System Date
+        int century2 = int.Parse(SystemDateStr.Substring(0, 1));
+        int year2 = int.Parse(SystemDateStr.Substring(1, 2));
+        int month2 = int.Parse(SystemDateStr.Substring(3, 2));
+        int day2 = int.Parse(SystemDateStr.Substring(5, 2));
+
+        int fullYear2 = (century2 - 1) * 100 + 2000 + year2;
+
+        DateTime date2 = new DateTime(fullYear2, month2, day2);
+
+        // Calculate the difference
+        int diffDays = (date2 - date1).Days;
+
+        Row.OverDueDays = diffDays > 0 ? diffDays : 0;
+    }
+    catch
+    {
+        Row.OverDueDays = 0; // fallback in case of invalid date
+    }
+}
+else
+{
+    Row.OverDueDays = 0;
+}
